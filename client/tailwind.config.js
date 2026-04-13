@@ -41,9 +41,6 @@ export default {
   plugins: [
     function({ addUtilities }) {
       addUtilities({
-        ".pb-safe": { "padding-bottom": "env(safe-area-inset-bottom)" },
-        ".pt-safe": { "padding-top": "env(safe-area-inset-top)" },
-        ".tap-target": { "min-height": "44px", "min-width": "44px" },
         ".glow-gold":    { "box-shadow": "0 0 20px rgba(212,175,55,0.4)" },
         ".glow-gold-sm": { "box-shadow": "0 0 10px rgba(212,175,55,0.3)" },
       });
