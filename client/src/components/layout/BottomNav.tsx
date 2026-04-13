@@ -1,24 +1,10 @@
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-const NavIcon = ({ path, label }: { path: string; label: string }) => (
-  <NavLink
-    to={path}
-    className={({ isActive }) =>
-      `flex flex-col items-center gap-1 py-2 px-4 text-xs font-medium transition-colors tap-target ${
-        isActive ? "text-primary-600" : "text-gray-500"
-      }`
-    }
-  >
-    {label}
-  </NavLink>
-);
-
-// Simple SVG icons inlined to avoid icon library dependency
 function ComponentsIcon({ active }: { active: boolean }) {
   return (
     <svg
-      className={`w-6 h-6 ${active ? "text-primary-600" : "text-gray-400"}`}
+      className={`w-6 h-6 ${active ? "text-primary-400" : "text-surface-400"}`}
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -36,7 +22,7 @@ function ComponentsIcon({ active }: { active: boolean }) {
 function ProductsIcon({ active }: { active: boolean }) {
   return (
     <svg
-      className={`w-6 h-6 ${active ? "text-primary-600" : "text-gray-400"}`}
+      className={`w-6 h-6 ${active ? "text-primary-400" : "text-surface-400"}`}
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -56,7 +42,7 @@ function ProductsIcon({ active }: { active: boolean }) {
 function SettingsIcon({ active }: { active: boolean }) {
   return (
     <svg
-      className={`w-6 h-6 ${active ? "text-primary-600" : "text-gray-400"}`}
+      className={`w-6 h-6 ${active ? "text-primary-400" : "text-surface-400"}`}
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -81,8 +67,8 @@ export default function BottomNav() {
   const { t } = useTranslation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-safe z-10">
-      <div className="flex justify-around max-w-lg mx-auto">
+    <nav className="fixed bottom-0 left-0 right-0 bg-surface-800 border-t border-surface-600 pb-safe z-10">
+      <div className="flex items-center justify-around h-16 max-w-[375px] mx-auto">
         {(
           [
             { to: "/components", label: t("nav.components"), Icon: ComponentsIcon },
@@ -93,16 +79,17 @@ export default function BottomNav() {
           <NavLink
             key={to}
             to={to}
-            className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 py-2 px-4 text-xs font-medium transition-colors min-w-[60px] ${
-                isActive ? "text-primary-600" : "text-gray-500"
-              }`
-            }
+            className="flex flex-col items-center justify-center flex-1 h-full gap-1 relative"
           >
             {({ isActive }) => (
               <>
+                {isActive && (
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-primary-400 rounded-b-full" />
+                )}
                 <Icon active={isActive} />
-                <span>{label}</span>
+                <span className={`text-xs font-medium ${isActive ? "text-primary-400" : "text-surface-400"}`}>
+                  {label}
+                </span>
               </>
             )}
           </NavLink>
