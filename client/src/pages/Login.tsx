@@ -33,21 +33,20 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center px-6 bg-gray-50">
-      <div className="w-full max-w-sm">
-        {/* Logo / App name */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-100 mb-4">
-            <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className="min-h-dvh flex flex-col items-center justify-center px-6 bg-surface-900">
+      <div className="w-full max-w-sm space-y-8">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-16 h-16 rounded-2xl bg-primary-600 flex items-center justify-center">
+            <svg className="w-8 h-8 text-surface-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Калькулятор вартості</h1>
-          <p className="text-sm text-gray-500 mt-1">Ювелірні вироби</p>
+          <h1 className="text-2xl font-bold text-surface-100">Калькулятор вартості</h1>
+          <p className="text-sm text-surface-400">Ювелірні вироби</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <Input
             label={t("auth.email")}
             type="email"
@@ -66,7 +65,7 @@ export default function Login() {
           />
 
           {error && (
-            <p className="text-sm text-red-600 bg-red-50 px-4 py-2 rounded-lg">{error}</p>
+            <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 px-4 py-2 rounded-lg">{error}</p>
           )}
 
           <Button type="submit" fullWidth size="lg" loading={loading}>
@@ -74,9 +73,9 @@ export default function Login() {
           </Button>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-4">
+        <p className="text-center text-sm text-surface-400">
           {t("auth.noAccount")}{" "}
-          <Link to="/register" className="text-primary-600 font-medium">
+          <Link to="/register" className="text-primary-400 font-medium hover:text-primary-300">
             {t("auth.register")}
           </Link>
         </p>
