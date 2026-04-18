@@ -34,6 +34,9 @@ const uploadsDir = process.env.UPLOADS_DIR ?? "./data/uploads";
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 app.use("/uploads", express.static(uploadsDir));
 
+// Health check
+app.get("/health", (_req, res) => res.json({ ok: true }));
+
 // API routes
 app.use("/api/auth", createAuthRouter(db));
 app.use("/api/categories", createCategoriesRouter(db));
