@@ -13,8 +13,6 @@ import Input from "../components/ui/Input";
 import Modal from "../components/ui/Modal";
 import PhotoUpload from "../components/ui/PhotoUpload";
 
-type Step = "name" | "components";
-
 interface SelectedComponent {
   component: Component;
   quantity: number;
@@ -25,18 +23,26 @@ export default function ProductForm() {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
-  const [step, setStep] = useState<Step>("name");
+  const [step, setStep] = useState<"name" | "components">("name");
   const [productName, setProductName] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
   const [selected, setSelected] = useState<SelectedComponent[]>([]);
+
+  // Picker modal state
+  const [showPicker, setShowPicker] = useState(false);
   const [pickerComponent, setPickerComponent] = useState<Component | null>(null);
-  const [qtyInput, setQtyInput] = useState("1");
+  const [pickerQtyInput, setPickerQtyInput] = useState("1");
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<number | null>(null);
+
+  // Edit qty modal state
+  const [editComponent, setEditComponent] = useState<Component | null>(null);
+  const [editQtyInput, setEditQtyInput] = useState("1");
 
   const { data: components = [] } = useQuery({
     queryKey: ["components", { search, categoryFilter }],
     queryFn: () => componentsApi.list({ search: search || undefined, category: categoryFilter ?? undefined }),
+    enabled: showPicker,
   });
 
   const { data: categories = [] } = useQuery({ queryKey: ["categories"], queryFn: categoriesApi.list });
@@ -49,28 +55,18 @@ export default function ProductForm() {
     },
   });
 
-  const totalCost = selected.reduce(
-    (sum, s) => sum + s.component.unitCost * s.quantity,
-    0
-  );
+  const totalCost = selected.reduce((sum, s) => sum + s.component.unitCost * s.quantity, 0);
 
-  const handleComponentTap = (comp: Component) => {
+  const handlePickerTap = (comp: Component) => {
     const existing = selected.find((s) => s.component.id === comp.id);
-    if (existing) {
-      // If already selected, open modal to edit quantity
-      setPickerComponent(comp);
-      setQtyInput(String(existing.quantity));
-    } else {
-      setPickerComponent(comp);
-      setQtyInput("1");
-    }
+    setPickerComponent(comp);
+    setPickerQtyInput(existing ? String(existing.quantity) : "1");
   };
 
-  const handleAddComponent = () => {
+  const handleConfirmAdd = () => {
     if (!pickerComponent) return;
-    const qty = Number(qtyInput);
+    const qty = Number(pickerQtyInput);
     if (qty <= 0) return;
-
     setSelected((prev) => {
       const idx = prev.findIndex((s) => s.component.id === pickerComponent.id);
       if (idx >= 0) {
@@ -83,17 +79,31 @@ export default function ProductForm() {
     setPickerComponent(null);
   };
 
-  const handleRemoveSelected = (compId: number) => {
-    setSelected((prev) => prev.filter((s) => s.component.id !== compId));
+  const handleEditTap = (comp: Component) => {
+    setEditComponent(comp);
+    const existing = selected.find((s) => s.component.id === comp.id);
+    setEditQtyInput(existing ? String(existing.quantity) : "1");
+  };
+
+  const handleConfirmEdit = () => {
+    if (!editComponent) return;
+    const qty = Number(editQtyInput);
+    if (qty <= 0) {
+      setSelected((prev) => prev.filter((s) => s.component.id !== editComponent.id));
+    } else {
+      setSelected((prev) => prev.map((s) =>
+        s.component.id === editComponent.id ? { ...s, quantity: qty } : s
+      ));
+    }
+    setEditComponent(null);
   };
 
   const handleSave = () => {
     const fd = new FormData();
     fd.append("name", productName.trim());
-    fd.append(
-      "components",
-      JSON.stringify(selected.map((s) => ({ componentId: s.component.id, quantity: s.quantity })))
-    );
+    fd.append("components", JSON.stringify(
+      selected.map((s) => ({ componentId: s.component.id, quantity: s.quantity }))
+    ));
     if (photo) fd.append("photo", photo);
     createMutation.mutate(fd);
   };
@@ -111,12 +121,7 @@ export default function ProductForm() {
             placeholder="Напр. Браслет «Весняний»"
             autoFocus
           />
-          <Button
-            fullWidth
-            size="lg"
-            onClick={() => setStep("components")}
-            disabled={!productName.trim()}
-          >
+          <Button fullWidth size="lg" onClick={() => setStep("components")} disabled={!productName.trim()}>
             {t("common.next")} →
           </Button>
         </div>
@@ -138,92 +143,121 @@ export default function ProductForm() {
         }
       />
 
-      {/* Running total bar */}
-      {selected.length > 0 && (
-        <div className="bg-primary-600/10 border-b border-primary-500/20 px-4 py-2 flex items-center justify-between">
-          <span className="text-sm text-primary-400">
-            {selected.length} скл. · {totalCost.toFixed(2)} {t("common.currency")}
-          </span>
-          <button
-            className="text-xs text-primary-400 underline"
-            onClick={() => setStep("name")}
-          >
-            Переглянути список
-          </button>
-        </div>
-      )}
+      <div className="px-4 py-4 space-y-4 pb-8">
+        {/* Running total */}
+        {selected.length > 0 && (
+          <div className="bg-primary-600/10 border border-primary-500/20 rounded-xl px-4 py-3 flex items-center justify-between">
+            <span className="text-sm text-primary-400">
+              {selected.length} скл. · {totalCost.toFixed(2)} {t("common.currency")}
+            </span>
+          </div>
+        )}
 
-      {/* Selected components chip strip */}
-      {selected.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto px-4 py-2 scrollbar-none">
-          {selected.map((s) => (
-            <div
-              key={s.component.id}
-              className="flex-shrink-0 flex items-center gap-1 bg-primary-600/15 text-primary-300 text-xs rounded-full px-3 py-1"
-            >
-              <span>{s.component.name} ×{s.quantity}</span>
+        {/* Selected components list */}
+        {selected.length > 0 ? (
+          <div className="bg-surface-800 rounded-2xl border border-surface-600 overflow-hidden">
+            {selected.map((s, idx) => (
               <button
-                onClick={() => handleRemoveSelected(s.component.id)}
-                className="ml-1 text-primary-400 hover:text-primary-200"
-              >
-                ×
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Filter bar */}
-      <div className="px-4 py-2 space-y-2">
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={t("components.search")}
-          className="w-full px-4 py-2.5 text-base sm:text-sm rounded-xl border border-surface-600 bg-surface-700 text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-        />
-        {categories.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-            <button
-              onClick={() => setCategoryFilter(null)}
-              className={`flex-shrink-0 px-3 py-1.5 text-xs rounded-full border font-medium ${
-                categoryFilter === null ? "bg-primary-600 text-white border-primary-600" : "bg-surface-700 border-surface-600 text-surface-300"
-              }`}
-            >
-              Всі
-            </button>
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setCategoryFilter(cat.id === categoryFilter ? null : cat.id)}
-                className={`flex-shrink-0 px-3 py-1.5 text-xs rounded-full border font-medium ${
-                  categoryFilter === cat.id ? "bg-primary-600 text-white border-primary-600" : "bg-surface-700 border-surface-600 text-surface-300"
+                key={s.component.id}
+                onClick={() => handleEditTap(s.component)}
+                className={`w-full flex items-center justify-between px-4 py-3 hover:bg-surface-700 transition-colors text-left ${
+                  idx < selected.length - 1 ? "border-b border-surface-700" : ""
                 }`}
               >
-                {cat.name}
+                <span className="text-sm text-surface-100">{s.component.name}</span>
+                <span className="text-sm text-surface-400">×{s.quantity}</span>
               </button>
             ))}
           </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <svg className="w-12 h-12 text-surface-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            <p className="text-surface-400 text-sm">Немає складових</p>
+            <p className="text-surface-500 text-xs mt-1">Натисніть «+» щоб додати</p>
+          </div>
         )}
+
+        {/* Add component button */}
+        <button
+          onClick={() => setShowPicker(true)}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed border-surface-600 text-surface-400 hover:border-primary-500 hover:text-primary-400 transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          <span className="text-sm font-medium">Додати складову</span>
+        </button>
       </div>
 
-      {/* Component grid */}
-      <div className="px-4 grid grid-cols-2 gap-3 pb-4">
-        {components.map((comp) => {
-          const sel = selected.find((s) => s.component.id === comp.id);
-          return (
+      {/* Component picker modal */}
+      <Modal
+        open={showPicker && !pickerComponent}
+        onClose={() => setShowPicker(false)}
+        className="max-h-[85vh] flex flex-col !p-0"
+      >
+        <div className="flex items-center justify-between px-6 pt-6 pb-2">
+          <div>
+            <h2 className="text-lg font-semibold text-surface-100">{t("products.addComponent")}</h2>
+            <p className="text-xs text-surface-400 mt-0.5">Оберіть складову, щоб додати її до продукту</p>
+          </div>
+          <button
+            onClick={() => setShowPicker(false)}
+            className="tap-target flex items-center justify-center text-surface-400"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="px-6 pb-3 space-y-2">
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("components.search")}
+            className="w-full px-4 py-2.5 text-base sm:text-sm rounded-xl border border-surface-600 bg-surface-700 text-surface-100 placeholder:text-surface-400 focus:outline-none focus:border-primary-400"
+          />
+          {categories.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+              <button
+                onClick={() => setCategoryFilter(null)}
+                className={`flex-shrink-0 px-3 py-1.5 text-xs rounded-full border font-medium ${
+                  categoryFilter === null ? "bg-primary-600 text-surface-950 border-primary-600" : "bg-surface-700 border-surface-600 text-surface-300"
+                }`}
+              >
+                Всі
+              </button>
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setCategoryFilter(cat.id === categoryFilter ? null : cat.id)}
+                  className={`flex-shrink-0 px-3 py-1.5 text-xs rounded-full border font-medium ${
+                    categoryFilter === cat.id ? "bg-primary-600 text-surface-950 border-primary-600" : "bg-surface-700 border-surface-600 text-surface-300"
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="overflow-y-auto flex-1 px-4 pb-4 grid grid-cols-2 gap-3 content-start">
+          {components.map((comp) => (
             <ComponentCard
               key={comp.id}
               component={comp}
               selectionMode
-              selected={Boolean(sel)}
-              onClick={() => handleComponentTap(comp)}
+              selected={Boolean(selected.find((s) => s.component.id === comp.id))}
+              onClick={() => handlePickerTap(comp)}
             />
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      </Modal>
 
-      {/* Quantity modal */}
+      {/* Quantity confirm modal */}
       <Modal
         open={Boolean(pickerComponent)}
         onClose={() => setPickerComponent(null)}
@@ -235,16 +269,44 @@ export default function ProductForm() {
             type="number"
             min="0.01"
             step="any"
-            value={qtyInput}
-            onChange={(e) => setQtyInput(e.target.value)}
+            value={pickerQtyInput}
+            onChange={(e) => setPickerQtyInput(e.target.value)}
             autoFocus
           />
           <div className="flex gap-3">
             <Button variant="secondary" fullWidth onClick={() => setPickerComponent(null)}>
               {t("common.cancel")}
             </Button>
-            <Button fullWidth onClick={handleAddComponent}>
+            <Button fullWidth onClick={handleConfirmAdd}>
               {t("products.addComponent")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit quantity modal */}
+      <Modal
+        open={Boolean(editComponent)}
+        onClose={() => setEditComponent(null)}
+        title={editComponent?.name}
+      >
+        <div className="space-y-4">
+          <Input
+            label={t("products.quantity")}
+            type="number"
+            min="0"
+            step="any"
+            value={editQtyInput}
+            onChange={(e) => setEditQtyInput(e.target.value)}
+            autoFocus
+          />
+          <p className="text-xs text-surface-400">Введіть 0, щоб видалити складову</p>
+          <div className="flex gap-3">
+            <Button variant="secondary" fullWidth onClick={() => setEditComponent(null)}>
+              {t("common.cancel")}
+            </Button>
+            <Button fullWidth onClick={handleConfirmEdit}>
+              {t("common.save")}
             </Button>
           </div>
         </div>

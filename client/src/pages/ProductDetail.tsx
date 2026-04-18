@@ -438,8 +438,11 @@ export default function ProductDetail() {
         onClose={() => setShowPicker(false)}
         className="max-h-[85vh] flex flex-col !p-0"
       >
-        <div className="flex items-center justify-between px-6 pt-6 pb-4">
-          <h2 className="text-lg font-semibold text-surface-100">{t("products.addComponent")}</h2>
+        <div className="flex items-center justify-between px-6 pt-6 pb-2">
+          <div>
+            <h2 className="text-lg font-semibold text-surface-100">{t("products.addComponent")}</h2>
+            <p className="text-xs text-surface-400 mt-0.5">Оберіть складову, щоб додати її до продукту</p>
+          </div>
           <button
             onClick={() => setShowPicker(false)}
             className="tap-target flex items-center justify-center text-surface-400"
