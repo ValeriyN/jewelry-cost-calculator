@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import { useTranslation } from "react-i18next";
 
 interface Option {
   id: number;
@@ -27,7 +26,6 @@ export default function Combobox({
   createLabel,
   error,
 }: Props) {
-  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [creating, setCreating] = useState(false);

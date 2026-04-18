@@ -1,7 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { productsApi } from "../api/products";
 import axios from "axios";
 
 export default function PublicProduct() {
