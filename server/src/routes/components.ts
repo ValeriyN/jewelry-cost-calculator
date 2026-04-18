@@ -142,6 +142,27 @@ export default function createComponentsRouter(db: BetterSQLite3Database<typeof 
     res.json(formatComponent(row));
   });
 
+  // GET /api/components/:id/products
+  router.get("/:id/products", (req: AuthRequest, res: Response): void => {
+    const id = Number(req.params.id);
+    const rows = db
+      .select({
+        id: schema.products.id,
+        name: schema.products.name,
+        createdAt: schema.products.createdAt,
+      })
+      .from(schema.productComponents)
+      .innerJoin(schema.products, eq(schema.products.id, schema.productComponents.productId))
+      .where(
+        and(
+          eq(schema.productComponents.componentId, id),
+          eq(schema.products.userId, req.userId!)
+        )
+      )
+      .all();
+    res.json(rows);
+  });
+
   // PUT /api/components/:id
   router.put("/:id", upload.single("photo"), (req: AuthRequest, res: Response): void => {
     const id = Number(req.params.id);
@@ -206,6 +227,12 @@ export default function createComponentsRouter(db: BetterSQLite3Database<typeof 
       .where(eq(schema.components.id, id))
       .run();
 
+    // Propagate new unit cost to all products that use this component
+    db.update(schema.productComponents)
+      .set({ unitCostSnapshot: unitCost })
+      .where(eq(schema.productComponents.componentId, id))
+      .run();
+
     const full = db
       .select({
         ...getTableColumns(schema.components),
@@ -232,6 +259,18 @@ export default function createComponentsRouter(db: BetterSQLite3Database<typeof 
 
     if (!row) {
       res.status(404).json({ error: "Складову не знайдено" });
+      return;
+    }
+
+    // Check if component is used in any products
+    const usage = db
+      .select()
+      .from(schema.productComponents)
+      .where(eq(schema.productComponents.componentId, id))
+      .get();
+
+    if (usage) {
+      res.status(409).json({ error: "Складова використовується в продуктах і не може бути видалена" });
       return;
     }
 

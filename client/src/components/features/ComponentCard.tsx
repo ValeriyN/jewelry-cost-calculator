@@ -57,7 +57,13 @@ export default function ComponentCard({ component, onClick, selectionMode, selec
             {component.unitCost.toFixed(2)} {t("common.currency")}
           </span>
         </p>
-        <p className="text-xs text-surface-400 mt-0.5">{t("components.unitCost")}</p>
+        <p className="text-xs text-surface-400 mt-0.5">
+          {new Date(component.createdAt.replace(" ", "T") + "Z").toLocaleDateString("uk-UA", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          })}
+        </p>
       </div>
 
       {/* Selection checkmark */}

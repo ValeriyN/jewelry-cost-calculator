@@ -20,9 +20,19 @@ export const componentsApi = {
   remove: (id: number) => api.delete(`/components/${id}`),
 };
 
+export const componentProductsApi = {
+  list: (componentId: number) =>
+    api
+      .get<{ id: number; name: string; createdAt: string }[]>(`/components/${componentId}/products`)
+      .then((r) => r.data),
+};
+
 export const categoriesApi = {
   list: () => api.get<Category[]>("/categories").then((r) => r.data),
   create: (name: string) => api.post<Category>("/categories", { name }).then((r) => r.data),
+  update: (id: number, name: string) =>
+    api.put<Category>(`/categories/${id}`, { name }).then((r) => r.data),
+  remove: (id: number) => api.delete(`/categories/${id}`),
 };
 
 export const suppliersApi = {

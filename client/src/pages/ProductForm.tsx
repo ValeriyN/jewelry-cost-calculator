@@ -140,12 +140,12 @@ export default function ProductForm() {
 
       {/* Running total bar */}
       {selected.length > 0 && (
-        <div className="bg-primary-50 border-b border-primary-200 px-4 py-2 flex items-center justify-between">
-          <span className="text-sm text-primary-700">
+        <div className="bg-primary-600/10 border-b border-primary-500/20 px-4 py-2 flex items-center justify-between">
+          <span className="text-sm text-primary-400">
             {selected.length} скл. · {totalCost.toFixed(2)} {t("common.currency")}
           </span>
           <button
-            className="text-xs text-primary-600 underline"
+            className="text-xs text-primary-400 underline"
             onClick={() => setStep("name")}
           >
             Переглянути список
@@ -159,12 +159,12 @@ export default function ProductForm() {
           {selected.map((s) => (
             <div
               key={s.component.id}
-              className="flex-shrink-0 flex items-center gap-1 bg-primary-100 text-primary-800 text-xs rounded-full px-3 py-1"
+              className="flex-shrink-0 flex items-center gap-1 bg-primary-600/15 text-primary-300 text-xs rounded-full px-3 py-1"
             >
               <span>{s.component.name} ×{s.quantity}</span>
               <button
                 onClick={() => handleRemoveSelected(s.component.id)}
-                className="ml-1 text-primary-600 hover:text-primary-900"
+                className="ml-1 text-primary-400 hover:text-primary-200"
               >
                 ×
               </button>
@@ -180,14 +180,14 @@ export default function ProductForm() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t("components.search")}
-          className="w-full px-4 py-2.5 text-sm rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full px-4 py-2.5 text-sm rounded-xl border border-surface-600 bg-surface-700 text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
         {categories.length > 0 && (
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
             <button
               onClick={() => setCategoryFilter(null)}
               className={`flex-shrink-0 px-3 py-1.5 text-xs rounded-full border font-medium ${
-                categoryFilter === null ? "bg-primary-600 text-white border-primary-600" : "bg-white border-gray-300 text-gray-600"
+                categoryFilter === null ? "bg-primary-600 text-white border-primary-600" : "bg-surface-700 border-surface-600 text-surface-300"
               }`}
             >
               Всі
@@ -197,7 +197,7 @@ export default function ProductForm() {
                 key={cat.id}
                 onClick={() => setCategoryFilter(cat.id === categoryFilter ? null : cat.id)}
                 className={`flex-shrink-0 px-3 py-1.5 text-xs rounded-full border font-medium ${
-                  categoryFilter === cat.id ? "bg-primary-600 text-white border-primary-600" : "bg-white border-gray-300 text-gray-600"
+                  categoryFilter === cat.id ? "bg-primary-600 text-white border-primary-600" : "bg-surface-700 border-surface-600 text-surface-300"
                 }`}
               >
                 {cat.name}

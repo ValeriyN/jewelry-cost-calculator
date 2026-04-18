@@ -1,4 +1,5 @@
-import { InputHTMLAttributes, forwardRef } from "react";
+import { forwardRef } from "react";
+import type { InputHTMLAttributes } from "react";
 
 interface Props extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -12,7 +13,7 @@ const Input = forwardRef<HTMLInputElement, Props>(
     return (
       <div className="flex flex-col gap-1">
         {label && (
-          <label htmlFor={inputId} className="text-sm font-medium text-gray-700">
+          <label htmlFor={inputId} className="text-sm font-medium text-surface-200">
             {label}
           </label>
         )}
@@ -20,17 +21,17 @@ const Input = forwardRef<HTMLInputElement, Props>(
           ref={ref}
           id={inputId}
           className={`
-            w-full px-4 py-3 text-sm rounded-xl border bg-white
-            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-            placeholder:text-gray-400
-            disabled:bg-gray-50 disabled:text-gray-500
-            ${error ? "border-red-400" : "border-gray-300"}
+            w-full px-4 py-3 text-sm rounded-xl border bg-surface-700 text-surface-100
+            focus:outline-none focus:border-primary-400
+            placeholder:text-surface-400
+            disabled:bg-surface-800 disabled:text-surface-500
+            ${error ? "border-red-400" : "border-surface-600"}
             ${className}
           `}
           {...props}
         />
-        {hint && !error && <p className="text-xs text-gray-500">{hint}</p>}
-        {error && <p className="text-xs text-red-600">{error}</p>}
+        {hint && !error && <p className="text-xs text-surface-400">{hint}</p>}
+        {error && <p className="text-xs text-red-400">{error}</p>}
       </div>
     );
   }

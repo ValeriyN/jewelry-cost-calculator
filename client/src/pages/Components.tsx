@@ -46,7 +46,7 @@ export default function Components() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t("components.search")}
-          className="w-full px-4 py-2.5 text-sm rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full px-4 py-2.5 text-sm rounded-xl border border-surface-600 bg-surface-700 text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
 
         {/* Category filter */}
@@ -57,7 +57,7 @@ export default function Components() {
               className={`flex-shrink-0 px-3 py-1.5 text-xs rounded-full border font-medium transition-colors ${
                 categoryFilter === null
                   ? "bg-primary-600 border-primary-600 text-white"
-                  : "bg-white border-gray-300 text-gray-600"
+                  : "bg-surface-700 border-surface-600 text-surface-300"
               }`}
             >
               Всі
@@ -69,7 +69,7 @@ export default function Components() {
                 className={`flex-shrink-0 px-3 py-1.5 text-xs rounded-full border font-medium transition-colors ${
                   categoryFilter === cat.id
                     ? "bg-primary-600 border-primary-600 text-white"
-                    : "bg-white border-gray-300 text-gray-600"
+                    : "bg-surface-700 border-surface-600 text-surface-300"
                 }`}
               >
                 {cat.name}
@@ -85,11 +85,11 @@ export default function Components() {
         </div>
       ) : components.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-          <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-16 h-16 text-surface-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
               d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
           </svg>
-          <p className="text-gray-500">{t("components.empty")}</p>
+          <p className="text-surface-400">{t("components.empty")}</p>
           <Button className="mt-4" onClick={() => navigate("/components/new")}>
             {t("components.add")}
           </Button>

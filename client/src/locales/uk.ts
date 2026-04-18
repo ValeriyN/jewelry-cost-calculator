@@ -30,7 +30,7 @@ const uk = {
     supplier: "Постачальник",
     photo: "Фотографія",
     batchQuantity: "Кількість у партії",
-    batchTotalCost: "Загальна вартість партії (грн)",
+    batchTotalCost: "Загальна вартість (грн)",
     deliveryCost: "Вартість доставки (грн)",
     unitCost: "Розрахункова вартість одиниці",
     unitCostHint: "(вартість + доставка) ÷ кількість",

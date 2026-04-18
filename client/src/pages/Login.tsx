@@ -38,8 +38,7 @@ export default function Login() {
         <div className="flex flex-col items-center gap-3">
           <div className="w-16 h-16 rounded-2xl bg-primary-600 flex items-center justify-center">
             <svg className="w-8 h-8 text-surface-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 3h12l4 6-10 13L2 9Z"></path><path d="M11 3 8 9l4 13 4-13-3-6"></path><path d="M2 9h20"></path>
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-surface-100">Калькулятор вартості</h1>
@@ -48,7 +47,7 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <Input
-            label={t("auth.email")}
+            placeholder={t("auth.email")}
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -56,7 +55,7 @@ export default function Login() {
             required
           />
           <Input
-            label={t("auth.password")}
+            placeholder={t("auth.password")}
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
