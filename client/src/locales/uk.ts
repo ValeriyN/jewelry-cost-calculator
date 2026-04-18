@@ -89,6 +89,7 @@ const uk = {
     error: "Помилка",
     required: "Обов'язкове поле",
     uploadPhoto: "Завантажити фото",
+    changePhoto: "Змінити фото",
     takePhoto: "Зробити фото",
     currency: "грн",
     pieces: "шт.",

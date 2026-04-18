@@ -94,7 +94,7 @@ export default function Combobox({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Пошук..."
-              className="w-full px-3 py-2 text-sm rounded-lg border border-surface-600 bg-surface-700 text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              className="w-full px-3 py-2 text-base sm:text-sm rounded-lg border border-surface-600 bg-surface-700 text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
           </div>
 

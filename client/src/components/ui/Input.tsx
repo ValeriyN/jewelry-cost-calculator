@@ -21,7 +21,7 @@ const Input = forwardRef<HTMLInputElement, Props>(
           ref={ref}
           id={inputId}
           className={`
-            w-full px-4 py-3 text-sm rounded-xl border bg-surface-700 text-surface-100
+            w-full px-4 py-3 text-base sm:text-sm rounded-xl border bg-surface-700 text-surface-100
             focus:outline-none focus:border-primary-400
             placeholder:text-surface-400
             disabled:bg-surface-800 disabled:text-surface-500

@@ -180,7 +180,7 @@ export default function ProductForm() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t("components.search")}
-          className="w-full px-4 py-2.5 text-sm rounded-xl border border-surface-600 bg-surface-700 text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full px-4 py-2.5 text-base sm:text-sm rounded-xl border border-surface-600 bg-surface-700 text-surface-100 placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
         {categories.length > 0 && (
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">

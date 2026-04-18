@@ -38,4 +38,7 @@ export const categoriesApi = {
 export const suppliersApi = {
   list: () => api.get<Supplier[]>("/suppliers").then((r) => r.data),
   create: (name: string) => api.post<Supplier>("/suppliers", { name }).then((r) => r.data),
+  update: (id: number, name: string) =>
+    api.put<Supplier>(`/suppliers/${id}`, { name }).then((r) => r.data),
+  remove: (id: number) => api.delete(`/suppliers/${id}`),
 };
