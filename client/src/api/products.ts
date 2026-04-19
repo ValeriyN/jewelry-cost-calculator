@@ -1,5 +1,5 @@
 import api from "../lib/axios";
-import type { Product, ProductDetail, ShareResponse, PublicProduct } from "@jewelry/shared";
+import type { Product, ProductDetail, ProductPhoto, ShareResponse, PublicProduct } from "@jewelry/shared";
 
 export const productsApi = {
   list: () => api.get<(Product & { totalCost: number; recommendedPrice: number; componentCount: number })[]>("/products").then((r) => r.data),
@@ -15,6 +15,17 @@ export const productsApi = {
     api.put<ProductDetail>(`/products/${id}`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }).then((r) => r.data),
+
+  addPhotos: (id: number, files: File[]) => {
+    const fd = new FormData();
+    files.forEach((f) => fd.append("photos", f));
+    return api.post<ProductPhoto[]>(`/products/${id}/photos`, fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }).then((r) => r.data);
+  },
+
+  deletePhoto: (productId: number, photoId: number) =>
+    api.delete(`/products/${productId}/photos/${photoId}`),
 
   remove: (id: number) => api.delete(`/products/${id}`),
 

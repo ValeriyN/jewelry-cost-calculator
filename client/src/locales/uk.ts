@@ -17,6 +17,12 @@ const uk = {
     noAccount: "Немає акаунту?",
     hasAccount: "Вже є акаунт?",
     logout: "Вийти",
+    changePassword: "Змінити пароль",
+    currentPassword: "Поточний пароль",
+    newPassword: "Новий пароль",
+    confirmPassword: "Підтвердіть новий пароль",
+    passwordMismatch: "Паролі не збігаються",
+    passwordChanged: "Пароль успішно змінено",
   },
 
   // Components
@@ -76,8 +82,11 @@ const uk = {
     title: "Налаштування",
     markupCoefficient: "Коефіцієнт націнки",
     markupHint: "Рекомендована ціна = собівартість × коефіцієнт",
+    defaultDeliveryCost: "Вартість доставки за замовчуванням (грн)",
+    defaultDeliveryCostHint: "Підставляється автоматично при додаванні нової складової",
     save: "Зберегти",
     saved: "Збережено",
+    exportComponents: "Експорт складових у Excel",
   },
 
   // Public share page

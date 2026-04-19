@@ -19,28 +19,43 @@ export default function createSettingsRouter(db: BetterSQLite3Database<typeof sc
       res.status(404).json({ error: "Користувача не знайдено" });
       return;
     }
-    res.json({ markupCoefficient: user.markupCoefficient });
+    res.json({ markupCoefficient: user.markupCoefficient, defaultDeliveryCost: user.defaultDeliveryCost });
   });
 
   // PUT /api/settings
   router.put("/", (req: AuthRequest, res: Response): void => {
-    const { markupCoefficient } = req.body as { markupCoefficient?: number };
+    const { markupCoefficient, defaultDeliveryCost } = req.body as {
+      markupCoefficient?: number;
+      defaultDeliveryCost?: number;
+    };
 
-    if (markupCoefficient === undefined || isNaN(Number(markupCoefficient))) {
-      res.status(400).json({ error: "Некоректне значення коефіцієнту" });
+    const updates: Partial<typeof schema.users.$inferInsert> = {};
+
+    if (markupCoefficient !== undefined) {
+      if (isNaN(Number(markupCoefficient)) || Number(markupCoefficient) <= 0) {
+        res.status(400).json({ error: "Коефіцієнт має бути більше 0" });
+        return;
+      }
+      updates.markupCoefficient = Number(markupCoefficient);
+    }
+
+    if (defaultDeliveryCost !== undefined) {
+      if (isNaN(Number(defaultDeliveryCost)) || Number(defaultDeliveryCost) < 0) {
+        res.status(400).json({ error: "Вартість доставки не може бути від'ємною" });
+        return;
+      }
+      updates.defaultDeliveryCost = Number(defaultDeliveryCost);
+    }
+
+    if (Object.keys(updates).length === 0) {
+      res.status(400).json({ error: "Немає даних для оновлення" });
       return;
     }
-    if (Number(markupCoefficient) <= 0) {
-      res.status(400).json({ error: "Коефіцієнт має бути більше 0" });
-      return;
-    }
 
-    db.update(schema.users)
-      .set({ markupCoefficient: Number(markupCoefficient) })
-      .where(eq(schema.users.id, req.userId!))
-      .run();
+    db.update(schema.users).set(updates).where(eq(schema.users.id, req.userId!)).run();
 
-    res.json({ markupCoefficient: Number(markupCoefficient) });
+    const user = db.select().from(schema.users).where(eq(schema.users.id, req.userId!)).get()!;
+    res.json({ markupCoefficient: user.markupCoefficient, defaultDeliveryCost: user.defaultDeliveryCost });
   });
 
   return router;

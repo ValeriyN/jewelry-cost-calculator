@@ -15,6 +15,20 @@
       "when": 1776533944442,
       "tag": "0001_slippery_chimera",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1776618632536,
+      "tag": "0002_icy_skreet",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1776621107165,
+      "tag": "0003_cool_mongoose",
+      "breakpoints": true
     }
   ]
 }

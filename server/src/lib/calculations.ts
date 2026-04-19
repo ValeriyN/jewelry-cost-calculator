@@ -8,7 +8,7 @@ export function calcUnitCost(
   batchQuantity: number
 ): number {
   if (batchQuantity <= 0) throw new Error("Кількість у партії має бути більше 0");
-  return (batchTotalCost + deliveryCost) / batchQuantity;
+  return Math.round(((batchTotalCost + deliveryCost) / batchQuantity) * 100) / 100;
 }
 
 export interface ComponentLine {

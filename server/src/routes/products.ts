@@ -13,7 +13,23 @@ import {
 import fs from "fs";
 import path from "path";
 
+const UPLOADS_DIR = () => process.env.UPLOADS_DIR ?? "./data/uploads";
+
+function deleteFile(filename: string) {
+  const p = path.join(UPLOADS_DIR(), filename);
+  if (fs.existsSync(p)) fs.unlinkSync(p);
+}
+
 export default function createProductsRouter(db: BetterSQLite3Database<typeof schema>) {
+  function getPhotos(productId: number) {
+    return db
+      .select({ id: schema.productPhotos.id, photoPath: schema.productPhotos.photoPath, position: schema.productPhotos.position })
+      .from(schema.productPhotos)
+      .where(eq(schema.productPhotos.productId, productId))
+      .all()
+      .sort((a, b) => a.position - b.position);
+  }
+
   function buildProductDetail(productId: number, userId: number) {
     const product = db
       .select()
@@ -56,7 +72,7 @@ export default function createProductsRouter(db: BetterSQLite3Database<typeof sc
     return {
       id: product.id,
       name: product.name,
-      photoPath: product.photoPath,
+      photos: getPhotos(productId),
       shareToken: product.shareToken,
       customPrice: product.customPrice,
       createdAt: product.createdAt,
@@ -102,10 +118,7 @@ export default function createProductsRouter(db: BetterSQLite3Database<typeof sc
           categoryName: schema.categories.name,
         })
         .from(schema.productComponents)
-        .leftJoin(
-          schema.components,
-          eq(schema.productComponents.componentId, schema.components.id)
-        )
+        .leftJoin(schema.components, eq(schema.productComponents.componentId, schema.components.id))
         .leftJoin(schema.categories, eq(schema.components.categoryId, schema.categories.id))
         .where(eq(schema.productComponents.productId, p.id))
         .all();
@@ -122,7 +135,7 @@ export default function createProductsRouter(db: BetterSQLite3Database<typeof sc
       return {
         id: p.id,
         name: p.name,
-        photoPath: p.photoPath,
+        photos: getPhotos(p.id),
         shareToken: p.shareToken,
         customPrice: p.customPrice,
         createdAt: p.createdAt,
@@ -136,7 +149,7 @@ export default function createProductsRouter(db: BetterSQLite3Database<typeof sc
   });
 
   // POST /api/products
-  router.post("/", upload.single("photo"), (req: AuthRequest, res: Response): void => {
+  router.post("/", upload.array("photos", 10), (req: AuthRequest, res: Response): void => {
     const { name, components: componentsJson } = req.body as {
       name?: string;
       components?: string;
@@ -157,35 +170,28 @@ export default function createProductsRouter(db: BetterSQLite3Database<typeof sc
       }
     }
 
-    const photoPath = req.file ? req.file.filename : null;
-
     const [product] = db
       .insert(schema.products)
-      .values({ name: name.trim(), photoPath, userId: req.userId! })
+      .values({ name: name.trim(), userId: req.userId! })
       .returning()
       .all();
+
+    const files = (req.files as Express.Multer.File[]) ?? [];
+    files.forEach((file, idx) => {
+      db.insert(schema.productPhotos)
+        .values({ productId: product.id, photoPath: file.filename, position: idx })
+        .run();
+    });
 
     for (const line of componentLines) {
       const component = db
         .select()
         .from(schema.components)
-        .where(
-          and(
-            eq(schema.components.id, line.componentId),
-            eq(schema.components.userId, req.userId!)
-          )
-        )
+        .where(and(eq(schema.components.id, line.componentId), eq(schema.components.userId, req.userId!)))
         .get();
-
       if (!component) continue;
-
       db.insert(schema.productComponents)
-        .values({
-          productId: product.id,
-          componentId: line.componentId,
-          quantity: line.quantity,
-          unitCostSnapshot: component.unitCost,
-        })
+        .values({ productId: product.id, componentId: line.componentId, quantity: line.quantity, unitCostSnapshot: component.unitCost })
         .run();
     }
 
@@ -204,7 +210,7 @@ export default function createProductsRouter(db: BetterSQLite3Database<typeof sc
   });
 
   // PUT /api/products/:id
-  router.put("/:id", upload.single("photo"), (req: AuthRequest, res: Response): void => {
+  router.put("/:id", upload.array("photos", 10), (req: AuthRequest, res: Response): void => {
     const id = Number(req.params.id);
     const existing = db
       .select()
@@ -231,26 +237,27 @@ export default function createProductsRouter(db: BetterSQLite3Database<typeof sc
       customPrice = isNaN(parsed) || parsed < 0 ? undefined : parsed;
     }
 
-    let photoPath = existing.photoPath;
-    if (req.file) {
-      if (existing.photoPath) {
-        const oldPath = path.join(
-          process.env.UPLOADS_DIR ?? "./data/uploads",
-          existing.photoPath
-        );
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-      }
-      photoPath = req.file.filename;
-    }
-
     db.update(schema.products)
       .set({
         name: name?.trim() ?? existing.name,
-        photoPath,
         ...(customPrice !== undefined ? { customPrice } : {}),
       })
       .where(eq(schema.products.id, id))
       .run();
+
+    // Append new photos
+    const files = (req.files as Express.Multer.File[]) ?? [];
+    if (files.length > 0) {
+      const currentPhotos = getPhotos(id);
+      const nextPosition = currentPhotos.length > 0
+        ? Math.max(...currentPhotos.map((p) => p.position)) + 1
+        : 0;
+      files.forEach((file, idx) => {
+        db.insert(schema.productPhotos)
+          .values({ productId: id, photoPath: file.filename, position: nextPosition + idx })
+          .run();
+      });
+    }
 
     if (componentsJson) {
       let componentLines: { componentId: number; quantity: number }[];
@@ -261,37 +268,90 @@ export default function createProductsRouter(db: BetterSQLite3Database<typeof sc
         return;
       }
 
-      db.delete(schema.productComponents)
-        .where(eq(schema.productComponents.productId, id))
-        .run();
+      db.delete(schema.productComponents).where(eq(schema.productComponents.productId, id)).run();
 
       for (const line of componentLines) {
         const component = db
           .select()
           .from(schema.components)
-          .where(
-            and(
-              eq(schema.components.id, line.componentId),
-              eq(schema.components.userId, req.userId!)
-            )
-          )
+          .where(and(eq(schema.components.id, line.componentId), eq(schema.components.userId, req.userId!)))
           .get();
-
         if (!component) continue;
-
         db.insert(schema.productComponents)
-          .values({
-            productId: id,
-            componentId: line.componentId,
-            quantity: line.quantity,
-            unitCostSnapshot: component.unitCost,
-          })
+          .values({ productId: id, componentId: line.componentId, quantity: line.quantity, unitCostSnapshot: component.unitCost })
           .run();
       }
     }
 
     const detail = buildProductDetail(id, req.userId!);
     res.json(detail);
+  });
+
+  // POST /api/products/:id/photos — add photos to existing product
+  router.post("/:id/photos", upload.array("photos", 10), (req: AuthRequest, res: Response): void => {
+    const id = Number(req.params.id);
+    const product = db
+      .select()
+      .from(schema.products)
+      .where(and(eq(schema.products.id, id), eq(schema.products.userId, req.userId!)))
+      .get();
+
+    if (!product) {
+      res.status(404).json({ error: "Продукт не знайдено" });
+      return;
+    }
+
+    const files = (req.files as Express.Multer.File[]) ?? [];
+    if (files.length === 0) {
+      res.status(400).json({ error: "Немає фото для завантаження" });
+      return;
+    }
+
+    const currentPhotos = getPhotos(id);
+    const nextPosition = currentPhotos.length > 0
+      ? Math.max(...currentPhotos.map((p) => p.position)) + 1
+      : 0;
+
+    files.forEach((file, idx) => {
+      db.insert(schema.productPhotos)
+        .values({ productId: id, photoPath: file.filename, position: nextPosition + idx })
+        .run();
+    });
+
+    res.json(getPhotos(id));
+  });
+
+  // DELETE /api/products/:id/photos/:photoId — delete a single photo
+  router.delete("/:id/photos/:photoId", (req: AuthRequest, res: Response): void => {
+    const productId = Number(req.params.id);
+    const photoId = Number(req.params.photoId);
+
+    const product = db
+      .select()
+      .from(schema.products)
+      .where(and(eq(schema.products.id, productId), eq(schema.products.userId, req.userId!)))
+      .get();
+
+    if (!product) {
+      res.status(404).json({ error: "Продукт не знайдено" });
+      return;
+    }
+
+    const photo = db
+      .select()
+      .from(schema.productPhotos)
+      .where(and(eq(schema.productPhotos.id, photoId), eq(schema.productPhotos.productId, productId)))
+      .get();
+
+    if (!photo) {
+      res.status(404).json({ error: "Фото не знайдено" });
+      return;
+    }
+
+    deleteFile(photo.photoPath);
+    db.delete(schema.productPhotos).where(eq(schema.productPhotos.id, photoId)).run();
+
+    res.status(204).send();
   });
 
   // DELETE /api/products/:id
@@ -308,13 +368,8 @@ export default function createProductsRouter(db: BetterSQLite3Database<typeof sc
       return;
     }
 
-    if (row.photoPath) {
-      const filePath = path.join(
-        process.env.UPLOADS_DIR ?? "./data/uploads",
-        row.photoPath
-      );
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    }
+    const photos = getPhotos(id);
+    photos.forEach((p) => deleteFile(p.photoPath));
 
     db.delete(schema.products).where(eq(schema.products.id, id)).run();
     res.status(204).send();
@@ -335,7 +390,6 @@ export default function createProductsRouter(db: BetterSQLite3Database<typeof sc
     }
 
     const token = product.shareToken ?? generateShareToken();
-
     if (!product.shareToken) {
       db.update(schema.products).set({ shareToken: token }).where(eq(schema.products.id, id)).run();
     }

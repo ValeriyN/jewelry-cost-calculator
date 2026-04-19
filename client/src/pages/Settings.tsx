@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import * as XLSX from "xlsx";
 import { settingsApi } from "../api/settings";
-import { categoriesApi, suppliersApi } from "../api/components";
+import { categoriesApi, suppliersApi, componentsApi } from "../api/components";
+import { authApi } from "../api/auth";
 import { useAuthStore } from "../store/authStore";
 import AppShell from "../components/layout/AppShell";
 import PageHeader from "../components/layout/PageHeader";
@@ -115,7 +117,17 @@ export default function Settings() {
   const { user, logout, updateUser } = useAuthStore();
   const qc = useQueryClient();
   const [coefficient, setCoefficient] = useState("");
+  const [deliveryCost, setDeliveryCost] = useState("");
   const [saved, setSaved] = useState(false);
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const [deletingCategoryId, setDeletingCategoryId] = useState<number | null>(null);
   const [deletingSupplierId, setDeletingSupplierId] = useState<number | null>(null);
@@ -164,14 +176,66 @@ export default function Settings() {
     onError: () => {},
   });
 
+  const changePasswordMutation = useMutation({
+    mutationFn: () => authApi.changePassword(currentPassword, newPassword),
+    onSuccess: () => {
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setPasswordError(null);
+      setPasswordSuccess(true);
+      setChangePasswordOpen(false);
+      setTimeout(() => setPasswordSuccess(false), 3000);
+    },
+    onError: (err: any) => {
+      setPasswordError(err?.response?.data?.error ?? t("common.error"));
+    },
+  });
+
+  const handleExportComponents = async () => {
+    setExporting(true);
+    try {
+      const components = await componentsApi.list();
+      const rows = components.map((c) => ({
+        [t("components.name")]: c.name,
+        [t("components.category")]: c.categoryName ?? "",
+        [t("components.supplier")]: c.supplierName ?? "",
+        [t("components.unitCost")]: c.unitCost,
+        [t("components.usedQuantity")]: c.usedQuantity,
+        [t("components.availableQuantity")]: c.availableQuantity,
+        Date: new Date(c.createdAt.replace(" ", "T") + "Z").toLocaleDateString("uk-UA"),
+      }));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, t("components.title"));
+      XLSX.writeFile(wb, `components_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleChangePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError(null);
+    if (newPassword !== confirmPassword) {
+      setPasswordError(t("auth.passwordMismatch"));
+      return;
+    }
+    changePasswordMutation.mutate();
+  };
+
   useEffect(() => {
-    if (settings) setCoefficient(String(settings.markupCoefficient));
+    if (settings) {
+      setCoefficient(String(settings.markupCoefficient));
+      setDeliveryCost(String(settings.defaultDeliveryCost));
+    }
   }, [settings]);
 
   const updateMutation = useMutation({
-    mutationFn: (value: number) => settingsApi.update(value),
+    mutationFn: (patch: { markupCoefficient?: number; defaultDeliveryCost?: number }) =>
+      settingsApi.update(patch),
     onSuccess: (data) => {
-      updateUser({ markupCoefficient: data.markupCoefficient });
+      updateUser({ markupCoefficient: data.markupCoefficient, defaultDeliveryCost: data.defaultDeliveryCost });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     },
@@ -182,10 +246,20 @@ export default function Settings() {
     const value = Number(coefficient);
     if (!coefficient || isNaN(value) || value <= 0) return;
     if (value === settings.markupCoefficient) return;
-    const timer = setTimeout(() => { updateMutation.mutate(value); }, 800);
+    const timer = setTimeout(() => { updateMutation.mutate({ markupCoefficient: value }); }, 800);
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [coefficient]);
+
+  useEffect(() => {
+    if (!settings) return;
+    const value = Number(deliveryCost);
+    if (deliveryCost === "" || isNaN(value) || value < 0) return;
+    if (value === settings.defaultDeliveryCost) return;
+    const timer = setTimeout(() => { updateMutation.mutate({ defaultDeliveryCost: value }); }, 800);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deliveryCost]);
 
   return (
     <AppShell>
@@ -196,6 +270,46 @@ export default function Settings() {
         <div className="bg-surface-800 rounded-2xl border border-surface-600 px-4 py-4">
           <p className="text-xs text-surface-400 mb-1">Акаунт</p>
           <p className="text-sm font-medium text-surface-100">{user?.email}</p>
+          <button
+            onClick={() => { setChangePasswordOpen((o) => !o); setPasswordError(null); setPasswordSuccess(false); }}
+            className="mt-2 text-xs text-primary-400 hover:text-primary-300"
+          >
+            {t("auth.changePassword")}
+          </button>
+          {passwordSuccess && (
+            <p className="mt-2 text-xs text-primary-400">✓ {t("auth.passwordChanged")}</p>
+          )}
+          {changePasswordOpen && (
+            <form onSubmit={handleChangePassword} className="mt-3 space-y-3">
+              <Input
+                label={t("auth.currentPassword")}
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+              />
+              <Input
+                label={t("auth.newPassword")}
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+              />
+              <Input
+                label={t("auth.confirmPassword")}
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+              {passwordError && (
+                <p className="text-sm text-red-400">{passwordError}</p>
+              )}
+              <Button type="submit" fullWidth loading={changePasswordMutation.isPending}>
+                {t("auth.changePassword")}
+              </Button>
+            </form>
+          )}
         </div>
 
         {/* Markup coefficient */}
@@ -209,20 +323,30 @@ export default function Settings() {
             onChange={(e) => setCoefficient(e.target.value)}
             hint={t("settings.markupHint")}
           />
-          {coefficient && !isNaN(Number(coefficient)) && (
-            <div className="bg-surface-800 border border-surface-600 rounded-xl px-4 py-3 text-sm text-surface-300">
-              Приклад: собівартість 100 грн → ціна{" "}
-              <span className="font-semibold text-primary-400">
-                {(100 * Number(coefficient)).toFixed(2)} грн
-              </span>
-            </div>
-          )}
-          {updateMutation.isPending ? (
+{updateMutation.isPending ? (
             <p className="text-xs text-surface-400 text-right">Збереження…</p>
           ) : saved ? (
             <p className="text-xs text-primary-400 text-right">✓ Збережено</p>
           ) : null}
         </div>
+
+        {/* Default delivery cost */}
+        <div className="space-y-3">
+          <Input
+            label={t("settings.defaultDeliveryCost")}
+            type="number"
+            min="0"
+            step="1"
+            value={deliveryCost}
+            onChange={(e) => setDeliveryCost(e.target.value)}
+            hint={t("settings.defaultDeliveryCostHint")}
+          />
+        </div>
+
+        {/* Export components */}
+        <Button variant="secondary" fullWidth loading={exporting} onClick={handleExportComponents}>
+          {t("settings.exportComponents")}
+        </Button>
 
         {/* Categories */}
         <div className="space-y-2">
@@ -335,7 +459,7 @@ export default function Settings() {
         </Modal>
 
         {/* Logout */}
-        <Button variant="secondary" fullWidth onClick={logout}>
+        <Button variant="danger" fullWidth onClick={logout}>
           {t("auth.logout")}
         </Button>
       </div>

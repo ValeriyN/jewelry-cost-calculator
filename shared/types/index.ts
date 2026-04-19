@@ -3,6 +3,7 @@ export interface User {
   id: number;
   email: string;
   markupCoefficient: number;
+  defaultDeliveryCost: number;
   createdAt: string;
 }
 
@@ -64,10 +65,16 @@ export interface ProductComponent {
 }
 
 // ─── Products ──────────────────────────────────────────────────────────────
+export interface ProductPhoto {
+  id: number;
+  photoPath: string;
+  position: number;
+}
+
 export interface Product {
   id: number;
   name: string;
-  photoPath: string | null;
+  photos: ProductPhoto[];
   shareToken: string | null;
   customPrice: number | null;
   createdAt: string;
@@ -99,12 +106,13 @@ export interface UpdateProductDto {
 // ─── Settings ──────────────────────────────────────────────────────────────
 export interface Settings {
   markupCoefficient: number;
+  defaultDeliveryCost: number;
 }
 
 // ─── Public Share ──────────────────────────────────────────────────────────
 export interface PublicProduct {
   name: string;
-  photoPath: string | null;
+  photos: ProductPhoto[];
   recommendedPrice: number;
   components: { componentName: string; quantity: number }[];
 }

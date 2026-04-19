@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -11,7 +11,6 @@ import ComponentCard from "../components/features/ComponentCard";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import Modal from "../components/ui/Modal";
-import PhotoUpload from "../components/ui/PhotoUpload";
 
 interface SelectedComponent {
   component: Component;
@@ -25,7 +24,8 @@ export default function ProductForm() {
 
   const [step, setStep] = useState<"name" | "components">("name");
   const [productName, setProductName] = useState("");
-  const [photo, setPhoto] = useState<File | null>(null);
+  const [photos, setPhotos] = useState<{ file: File; preview: string }[]>([]);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const [selected, setSelected] = useState<SelectedComponent[]>([]);
 
   // Picker modal state
@@ -99,13 +99,25 @@ export default function ProductForm() {
     setEditComponent(null);
   };
 
+  const handleAddPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (!files.length) return;
+    const imageCompression = (await import("browser-image-compression")).default;
+    const compressed = await Promise.all(
+      files.map((f) => imageCompression(f, { maxSizeMB: 0.3, maxWidthOrHeight: 1280, useWebWorker: true }))
+    );
+    const newEntries = compressed.map((f) => ({ file: f, preview: URL.createObjectURL(f) }));
+    setPhotos((prev) => [...prev, ...newEntries]);
+  };
+
   const handleSave = () => {
     const fd = new FormData();
     fd.append("name", productName.trim());
     fd.append("components", JSON.stringify(
       selected.map((s) => ({ componentId: s.component.id, quantity: s.quantity }))
     ));
-    if (photo) fd.append("photo", photo);
+    photos.forEach((p) => fd.append("photos", p.file));
     createMutation.mutate(fd);
   };
 
@@ -114,7 +126,37 @@ export default function ProductForm() {
       <AppShell>
         <PageHeader title={t("products.add")} backHref="/products" />
         <div className="px-4 py-6 space-y-6">
-          <PhotoUpload label={t("products.photo")} onChange={setPhoto} />
+          {/* Multi-photo strip */}
+          <div className="space-y-2">
+            <span className="text-sm font-medium text-surface-200">{t("products.photo")}</span>
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+              {photos.map((p, idx) => (
+                <div key={idx} className="relative flex-shrink-0 w-28 h-28 rounded-xl overflow-hidden bg-surface-700 group">
+                  <img src={p.preview} alt="" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setPhotos((prev) => prev.filter((_, i) => i !== idx))}
+                    className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 active:opacity-100 transition-opacity"
+                  >
+                    <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                className="flex-shrink-0 w-28 h-28 rounded-xl border-2 border-dashed border-surface-600 flex flex-col items-center justify-center gap-1 text-surface-400 hover:border-primary-500 hover:text-primary-400 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span className="text-xs">{t("common.uploadPhoto")}</span>
+              </button>
+              <input ref={photoInputRef} type="file" accept="image/*" multiple onChange={handleAddPhotos} className="hidden" />
+            </div>
+          </div>
           <Input
             label={t("products.name")}
             value={productName}

@@ -4,7 +4,7 @@ interface Props {
   product: {
     id: number;
     name: string;
-    photoPath: string | null;
+    photos: { id: number; photoPath: string; position: number }[];
     totalCost: number;
     recommendedPrice: number;
     componentCount: number;
@@ -24,9 +24,9 @@ export default function ProductCard({ product, onClick }: Props) {
     >
       {/* Photo */}
       <div className="aspect-video w-full bg-surface-700">
-        {product.photoPath ? (
+        {product.photos[0] ? (
           <img
-            src={`/uploads/${product.photoPath}`}
+            src={`/uploads/${product.photos[0].photoPath}`}
             alt={product.name}
             className="w-full h-full object-cover"
             loading="lazy"

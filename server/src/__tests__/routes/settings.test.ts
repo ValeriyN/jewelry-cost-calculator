@@ -19,13 +19,14 @@ describe("Settings routes", () => {
   });
 
   describe("GET /api/settings", () => {
-    it("returns default markup coefficient of 1.8", async () => {
+    it("returns default markup coefficient of 1.8 and default delivery cost of 20", async () => {
       const res = await request(app)
         .get("/api/settings")
         .set("Authorization", `Bearer ${token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.markupCoefficient).toBe(1.8);
+      expect(res.body.defaultDeliveryCost).toBe(20);
     });
 
     it("returns 401 without token", async () => {
@@ -56,6 +57,38 @@ describe("Settings routes", () => {
         .set("Authorization", `Bearer ${token}`);
 
       expect(get.body.markupCoefficient).toBe(3.0);
+    });
+
+    it("updates default delivery cost", async () => {
+      const res = await request(app)
+        .put("/api/settings")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ defaultDeliveryCost: 50 });
+
+      expect(res.status).toBe(200);
+      expect(res.body.defaultDeliveryCost).toBe(50);
+    });
+
+    it("persists new delivery cost", async () => {
+      await request(app)
+        .put("/api/settings")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ defaultDeliveryCost: 35 });
+
+      const get = await request(app)
+        .get("/api/settings")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(get.body.defaultDeliveryCost).toBe(35);
+    });
+
+    it("returns 400 for negative delivery cost", async () => {
+      const res = await request(app)
+        .put("/api/settings")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ defaultDeliveryCost: -5 });
+
+      expect(res.status).toBe(400);
     });
 
     it("returns 400 for negative coefficient", async () => {

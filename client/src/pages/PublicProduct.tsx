@@ -37,14 +37,18 @@ export default function PublicProduct() {
   return (
     <div className="min-h-dvh bg-surface-950">
       <div className="max-w-lg mx-auto bg-surface-900 min-h-dvh">
-        {/* Photo */}
-        {product.photoPath && (
-          <div className="aspect-video w-full bg-surface-800">
-            <img
-              src={`/uploads/${product.photoPath}`}
-              alt={product.name}
-              className="w-full h-full object-cover"
-            />
+        {/* Photos */}
+        {product.photos?.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto scrollbar-none p-3">
+            {product.photos.map((photo: any) => (
+              <div key={photo.id} className="flex-shrink-0 w-48 h-48 rounded-xl overflow-hidden bg-surface-800">
+                <img
+                  src={`/uploads/${photo.photoPath}`}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ))}
           </div>
         )}
 

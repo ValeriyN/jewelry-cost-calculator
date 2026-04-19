@@ -53,6 +53,7 @@ export default function createAuthRouter(db: BetterSQLite3Database<typeof schema
         id: user.id,
         email: user.email,
         markupCoefficient: user.markupCoefficient,
+        defaultDeliveryCost: user.defaultDeliveryCost,
         createdAt: user.createdAt,
       },
     });
@@ -90,9 +91,44 @@ export default function createAuthRouter(db: BetterSQLite3Database<typeof schema
         id: user.id,
         email: user.email,
         markupCoefficient: user.markupCoefficient,
+        defaultDeliveryCost: user.defaultDeliveryCost,
         createdAt: user.createdAt,
       },
     });
+  });
+
+  // PUT /api/auth/password
+  router.put("/password", requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
+    const { currentPassword, newPassword } = req.body as {
+      currentPassword?: string;
+      newPassword?: string;
+    };
+
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({ error: "Поточний та новий паролі обов'язкові" });
+      return;
+    }
+    if (newPassword.length < 6) {
+      res.status(400).json({ error: "Новий пароль має містити щонайменше 6 символів" });
+      return;
+    }
+
+    const user = db.select().from(schema.users).where(eq(schema.users.id, req.userId!)).get();
+    if (!user) {
+      res.status(404).json({ error: "Користувача не знайдено" });
+      return;
+    }
+
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) {
+      res.status(401).json({ error: "Поточний пароль невірний" });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    db.update(schema.users).set({ passwordHash }).where(eq(schema.users.id, req.userId!)).run();
+
+    res.json({ ok: true });
   });
 
   // GET /api/auth/me

@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `default_delivery_cost` real DEFAULT 20 NOT NULL;

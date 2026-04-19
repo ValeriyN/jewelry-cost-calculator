@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { componentsApi, categoriesApi, suppliersApi, componentProductsApi } from "../api/components";
+import { useAuthStore } from "../store/authStore";
 import AppShell from "../components/layout/AppShell";
 import PageHeader from "../components/layout/PageHeader";
 import Button from "../components/ui/Button";
@@ -17,6 +18,7 @@ export default function ComponentForm() {
   const { id } = useParams<{ id: string }>();
   const isEdit = Boolean(id);
   const qc = useQueryClient();
+  const { user } = useAuthStore();
 
   const { data: existing } = useQuery({
     queryKey: ["component", id],
@@ -38,7 +40,7 @@ export default function ComponentForm() {
   const [photo, setPhoto] = useState<File | null>(null);
   const [batchQty, setBatchQty] = useState("");
   const [batchCost, setBatchCost] = useState("");
-  const [deliveryCost, setDeliveryCost] = useState("20");
+  const [deliveryCost, setDeliveryCost] = useState(() => String(user?.defaultDeliveryCost ?? 20));
   const [showDelete, setShowDelete] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
 

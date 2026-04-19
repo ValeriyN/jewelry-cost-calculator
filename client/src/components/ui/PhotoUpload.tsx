@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import imageCompression from "browser-image-compression";
 
 interface Props {
   current?: string | null;
@@ -13,13 +14,19 @@ export default function PhotoUpload({ current, onChange, label }: Props) {
   const cameraRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
-    if (file) {
-      setPreview(URL.createObjectURL(file));
-      onChange(file);
-    }
     e.target.value = "";
+    if (!file) return;
+
+    const compressed = await imageCompression(file, {
+      maxSizeMB: 0.3,
+      maxWidthOrHeight: 1280,
+      useWebWorker: true,
+    });
+
+    setPreview(URL.createObjectURL(compressed));
+    onChange(compressed);
   };
 
   const displaySrc = preview ?? (current ? `/uploads/${current}` : null);

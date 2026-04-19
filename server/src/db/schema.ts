@@ -6,6 +6,7 @@ export const users = sqliteTable("users", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   markupCoefficient: real("markup_coefficient").notNull().default(1.8),
+  defaultDeliveryCost: real("default_delivery_cost").notNull().default(20),
   createdAt: text("created_at")
     .notNull()
     .default(sql`(datetime('now'))`),
@@ -68,6 +69,18 @@ export const products = sqliteTable("products", {
   userId: integer("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const productPhotos = sqliteTable("product_photos", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  productId: integer("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+  photoPath: text("photo_path").notNull(),
+  position: integer("position").notNull().default(0),
   createdAt: text("created_at")
     .notNull()
     .default(sql`(datetime('now'))`),

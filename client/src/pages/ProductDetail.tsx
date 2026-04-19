@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -60,12 +60,21 @@ export default function ProductDetail() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<number | null>(null);
 
+  // Photo management
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
+
   // Product delete
   const [showDelete, setShowDelete] = useState(false);
 
   // Sharing / PDF
   const [shareLoading, setShareLoading] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
 
   useEffect(() => {
     if (product) {
@@ -101,6 +110,28 @@ export default function ProductDetail() {
       navigate("/products");
     },
   });
+
+  const deletePhotoMutation = useMutation({
+    mutationFn: (photoId: number) => productsApi.deletePhoto(Number(id), photoId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["product", id] }),
+  });
+
+  const handleAddPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (!files.length) return;
+    setPhotoUploading(true);
+    try {
+      const imageCompression = (await import("browser-image-compression")).default;
+      const compressed = await Promise.all(
+        files.map((f) => imageCompression(f, { maxSizeMB: 0.3, maxWidthOrHeight: 1280, useWebWorker: true }))
+      );
+      await productsApi.addPhotos(Number(id), compressed);
+      qc.invalidateQueries({ queryKey: ["product", id] });
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
 
   // Auto-save name (debounced)
   useEffect(() => {
@@ -291,13 +322,52 @@ export default function ProductDetail() {
       />
 
       <div className="pb-6">
-        {/* Photo */}
-        {product.photoPath && (
-          <div className="aspect-video w-full bg-surface-800">
-            <img
-              src={`/uploads/${product.photoPath}`}
-              alt={product.name}
-              className="w-full h-full object-cover"
+        {/* Photo gallery */}
+        {(product.photos.length > 0 || true) && (
+          <div className="flex gap-2 overflow-x-auto px-4 pt-4 pb-2 scrollbar-none">
+            {product.photos.map((photo) => (
+              <div key={photo.id} className="relative flex-shrink-0 w-36 h-36 rounded-xl overflow-hidden bg-surface-700 group">
+                <img
+                  src={`/uploads/${photo.photoPath}`}
+                  alt=""
+                  className="w-full h-full object-cover cursor-pointer"
+                  onClick={() => setLightboxPhoto(`/uploads/${photo.photoPath}`)}
+                />
+                <button
+                  onClick={() => deletePhotoMutation.mutate(photo.id)}
+                  className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center"
+                  aria-label={t("common.delete")}
+                >
+                  <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+            {/* Add photo tile */}
+            <button
+              onClick={() => photoInputRef.current?.click()}
+              disabled={photoUploading}
+              className="flex-shrink-0 w-36 h-36 rounded-xl border-2 border-dashed border-surface-600 flex flex-col items-center justify-center gap-1 text-surface-400 hover:border-primary-500 hover:text-primary-400 transition-colors disabled:opacity-50"
+            >
+              {photoUploading ? (
+                <div className="w-5 h-5 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span className="text-xs">{t("common.uploadPhoto")}</span>
+                </>
+              )}
+            </button>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleAddPhotos}
+              className="hidden"
             />
           </div>
         )}
@@ -591,6 +661,29 @@ export default function ProductDetail() {
           </div>
         </div>
       </Modal>
+
+      {/* Lightbox */}
+      {lightboxPhoto && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+          onClick={() => setLightboxPhoto(null)}
+        >
+          <img
+            src={lightboxPhoto}
+            alt=""
+            className="max-w-full max-h-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            onClick={() => setLightboxPhoto(null)}
+            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/60 flex items-center justify-center text-white"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Delete product modal */}
       <Modal open={showDelete} onClose={() => setShowDelete(false)} title={t("products.deleteConfirm")}>

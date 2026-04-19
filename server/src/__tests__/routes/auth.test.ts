@@ -95,6 +95,90 @@ describe("Auth routes", () => {
     });
   });
 
+  describe("PUT /api/auth/password", () => {
+    let token: string;
+
+    beforeEach(async () => {
+      const reg = await request(app).post("/api/auth/register").send({
+        email: "user@example.com",
+        password: "oldpassword",
+      });
+      token = reg.body.token;
+    });
+
+    it("changes password with correct current password", async () => {
+      const res = await request(app)
+        .put("/api/auth/password")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ currentPassword: "oldpassword", newPassword: "newpassword123" });
+
+      expect(res.status).toBe(200);
+      expect(res.body.ok).toBe(true);
+    });
+
+    it("can login with new password after change", async () => {
+      await request(app)
+        .put("/api/auth/password")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ currentPassword: "oldpassword", newPassword: "newpassword123" });
+
+      const login = await request(app).post("/api/auth/login").send({
+        email: "user@example.com",
+        password: "newpassword123",
+      });
+      expect(login.status).toBe(200);
+      expect(login.body.token).toBeDefined();
+    });
+
+    it("cannot login with old password after change", async () => {
+      await request(app)
+        .put("/api/auth/password")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ currentPassword: "oldpassword", newPassword: "newpassword123" });
+
+      const login = await request(app).post("/api/auth/login").send({
+        email: "user@example.com",
+        password: "oldpassword",
+      });
+      expect(login.status).toBe(401);
+    });
+
+    it("returns 401 for wrong current password", async () => {
+      const res = await request(app)
+        .put("/api/auth/password")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ currentPassword: "wrongpassword", newPassword: "newpassword123" });
+
+      expect(res.status).toBe(401);
+    });
+
+    it("returns 400 for new password shorter than 6 chars", async () => {
+      const res = await request(app)
+        .put("/api/auth/password")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ currentPassword: "oldpassword", newPassword: "abc" });
+
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 400 when fields are missing", async () => {
+      const res = await request(app)
+        .put("/api/auth/password")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ currentPassword: "oldpassword" });
+
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 401 without auth token", async () => {
+      const res = await request(app)
+        .put("/api/auth/password")
+        .send({ currentPassword: "oldpassword", newPassword: "newpassword123" });
+
+      expect(res.status).toBe(401);
+    });
+  });
+
   describe("GET /api/auth/me", () => {
     it("returns user profile with valid token", async () => {
       const reg = await request(app).post("/api/auth/register").send({

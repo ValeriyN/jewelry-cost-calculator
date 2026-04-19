@@ -49,10 +49,17 @@ export default function createPublicRouter(db: BetterSQLite3Database<typeof sche
       }))
     );
 
+    const photos = db
+      .select({ id: schema.productPhotos.id, photoPath: schema.productPhotos.photoPath, position: schema.productPhotos.position })
+      .from(schema.productPhotos)
+      .where(eq(schema.productPhotos.productId, product.id))
+      .all()
+      .sort((a, b) => a.position - b.position);
+
     // Public view: NO cost details, only recommended price
     res.json({
       name: product.name,
-      photoPath: product.photoPath,
+      photos,
       recommendedPrice: product.customPrice ?? calcRecommendedPrice(totalCost, user.markupCoefficient),
       components: lines.map((l) => ({
         componentName: l.componentName,
