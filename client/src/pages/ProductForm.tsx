@@ -242,7 +242,7 @@ export default function ProductForm() {
           )}
         </div>
         <div className="overflow-y-auto flex-1 px-4 pb-4 grid grid-cols-2 gap-3 content-start">
-          {components.map((comp) => (
+          {components.filter((c) => c.availableQuantity > 0).map((comp) => (
             <ComponentCard
               key={comp.id}
               component={comp}
@@ -270,6 +270,11 @@ export default function ProductForm() {
             onChange={(e) => setPickerQtyInput(e.target.value)}
             autoFocus
           />
+          {pickerComponent && Number(pickerQtyInput) >= pickerComponent.availableQuantity && Number(pickerQtyInput) > 0 && (
+            <p className="text-xs text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-lg px-3 py-2">
+              {t("components.willBeOutOfStock")}
+            </p>
+          )}
           <div className="flex gap-3">
             <Button variant="secondary" fullWidth onClick={() => setPickerComponent(null)}>
               {t("common.cancel")}

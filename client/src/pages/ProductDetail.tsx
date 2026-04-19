@@ -208,6 +208,7 @@ export default function ProductDetail() {
   };
 
   const filteredComponents = allComponents.filter((c) => {
+    if (c.availableQuantity <= 0) return false;
     if (categoryFilter && c.categoryId !== categoryFilter) return false;
     if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
@@ -463,6 +464,14 @@ export default function ProductDetail() {
             onChange={(e) => setEditQtyInput(e.target.value)}
             autoFocus
           />
+          {(() => {
+            const comp = allComponents.find((c) => c.id === editingLine?.componentId);
+            return comp && Number(editQtyInput) >= comp.availableQuantity && Number(editQtyInput) > 0 ? (
+              <p className="text-xs text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-lg px-3 py-2">
+                {t("components.willBeOutOfStock")}
+              </p>
+            ) : null;
+          })()}
           <div className="flex gap-3">
             <Button
               variant="danger"
@@ -567,6 +576,11 @@ export default function ProductDetail() {
             onChange={(e) => setPickerQtyInput(e.target.value)}
             autoFocus
           />
+          {pickerComponent && Number(pickerQtyInput) >= pickerComponent.availableQuantity && Number(pickerQtyInput) > 0 && (
+            <p className="text-xs text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-lg px-3 py-2">
+              {t("components.willBeOutOfStock")}
+            </p>
+          )}
           <div className="flex gap-3">
             <Button variant="secondary" fullWidth onClick={() => setPickerComponent(null)}>
               {t("common.cancel")}
