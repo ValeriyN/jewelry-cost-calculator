@@ -2,9 +2,6 @@ import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import ComponentCard from "../components/features/ComponentCard";
 import type { Component } from "@jewelry/shared";
-import "../../src/__tests__/../lib/i18n";
-
-// i18n needs to be initialized for components using useTranslation
 import "../lib/i18n";
 
 const mockComponent: Component = {
@@ -19,6 +16,8 @@ const mockComponent: Component = {
   batchTotalCost: 200,
   deliveryCost: 20,
   unitCost: 2.2,
+  usedQuantity: 30,
+  availableQuantity: 70,
   createdAt: "2025-01-01T00:00:00",
 };
 
@@ -68,5 +67,18 @@ describe("ComponentCard", () => {
     );
     getByRole("button").click();
     expect(onClick).toHaveBeenCalledOnce();
+  });
+
+  it("renders available quantity badge", () => {
+    render(<ComponentCard component={mockComponent} />);
+    expect(screen.getByText(/70/)).toBeInTheDocument();
+  });
+
+  it("renders negative available quantity in red badge", () => {
+    const overused = { ...mockComponent, usedQuantity: 120, availableQuantity: -20 };
+    const { container } = render(<ComponentCard component={overused} />);
+    const badge = container.querySelector(".bg-red-500\\/15");
+    expect(badge).toBeInTheDocument();
+    expect(badge?.textContent).toMatch(/-20/);
   });
 });

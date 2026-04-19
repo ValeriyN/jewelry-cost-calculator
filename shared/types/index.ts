@@ -35,6 +35,8 @@ export interface Component {
   batchTotalCost: number;
   deliveryCost: number;
   unitCost: number;
+  usedQuantity: number;
+  availableQuantity: number;
   createdAt: string;
 }
 
@@ -67,6 +69,7 @@ export interface Product {
   name: string;
   photoPath: string | null;
   shareToken: string | null;
+  customPrice: number | null;
   createdAt: string;
 }
 

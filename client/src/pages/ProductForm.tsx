@@ -51,6 +51,7 @@ export default function ProductForm() {
     mutationFn: (fd: FormData) => productsApi.create(fd),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["components"] });
       navigate(`/products/${data.id}`);
     },
   });
@@ -119,7 +120,6 @@ export default function ProductForm() {
             value={productName}
             onChange={(e) => setProductName(e.target.value)}
             placeholder="Напр. Браслет «Весняний»"
-            autoFocus
           />
           <Button fullWidth size="lg" onClick={() => setStep("components")} disabled={!productName.trim()}>
             {t("common.next")} →
@@ -200,16 +200,13 @@ export default function ProductForm() {
       >
         <div className="flex items-center justify-between px-6 pt-6 pb-2">
           <div>
-            <h2 className="text-lg font-semibold text-surface-100">{t("products.addComponent")}</h2>
-            <p className="text-xs text-surface-400 mt-0.5">Оберіть складову, щоб додати її до продукту</p>
+            <h2 className="text-lg font-semibold text-surface-100">{t("products.pickComponents")}</h2>
           </div>
           <button
             onClick={() => setShowPicker(false)}
-            className="tap-target flex items-center justify-center text-surface-400"
+            className="tap-target px-3 py-1.5 text-sm font-medium text-primary-400 bg-primary-600/15 rounded-lg"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            {t("common.done")}
           </button>
         </div>
         <div className="px-6 pb-3 space-y-2">

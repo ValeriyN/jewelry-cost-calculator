@@ -65,6 +65,36 @@ describe("Public share route", () => {
     expect(pub.body.components[0].quantity).toBe(10);
   });
 
+  it("uses customPrice when set instead of calculated recommendedPrice", async () => {
+    const comp = await request(app)
+      .post("/api/components")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Намистина", batchQuantity: 100, batchTotalCost: 500, deliveryCost: 20 });
+
+    const product = await request(app)
+      .post("/api/products")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        name: "Браслет з кастомною ціною",
+        components: JSON.stringify([{ componentId: comp.body.id, quantity: 10 }]),
+      });
+    // auto recommendedPrice = 52 * 1.8 = 93.6
+
+    await request(app)
+      .put(`/api/products/${product.body.id}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ customPrice: "250" });
+
+    const share = await request(app)
+      .post(`/api/products/${product.body.id}/share`)
+      .set("Authorization", `Bearer ${token}`);
+
+    const pub = await request(app).get(`/api/public/${share.body.shareToken}`);
+
+    expect(pub.status).toBe(200);
+    expect(pub.body.recommendedPrice).toBe(250);
+  });
+
   it("returns 404 after share token is revoked", async () => {
     const product = await request(app)
       .post("/api/products")

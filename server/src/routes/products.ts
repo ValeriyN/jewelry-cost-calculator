@@ -58,6 +58,7 @@ export default function createProductsRouter(db: BetterSQLite3Database<typeof sc
       name: product.name,
       photoPath: product.photoPath,
       shareToken: product.shareToken,
+      customPrice: product.customPrice,
       createdAt: product.createdAt,
       components: lines.map((l) => ({
         id: l.id,
@@ -70,7 +71,7 @@ export default function createProductsRouter(db: BetterSQLite3Database<typeof sc
         totalCost: l.unitCostSnapshot * l.quantity,
       })),
       totalCost,
-      recommendedPrice: calcRecommendedPrice(totalCost, user.markupCoefficient),
+      recommendedPrice: product.customPrice ?? calcRecommendedPrice(totalCost, user.markupCoefficient),
       categoryBreakdown: calcCategoryBreakdown(mapped),
     };
   }
@@ -123,9 +124,10 @@ export default function createProductsRouter(db: BetterSQLite3Database<typeof sc
         name: p.name,
         photoPath: p.photoPath,
         shareToken: p.shareToken,
+        customPrice: p.customPrice,
         createdAt: p.createdAt,
         totalCost,
-        recommendedPrice: calcRecommendedPrice(totalCost, user.markupCoefficient),
+        recommendedPrice: p.customPrice ?? calcRecommendedPrice(totalCost, user.markupCoefficient),
         componentCount: lines.length,
       };
     });
@@ -215,10 +217,19 @@ export default function createProductsRouter(db: BetterSQLite3Database<typeof sc
       return;
     }
 
-    const { name, components: componentsJson } = req.body as {
+    const { name, components: componentsJson, customPrice: customPriceRaw } = req.body as {
       name?: string;
       components?: string;
+      customPrice?: string;
     };
+
+    let customPrice: number | null | undefined;
+    if (customPriceRaw === "reset") {
+      customPrice = null;
+    } else if (customPriceRaw !== undefined) {
+      const parsed = Number(customPriceRaw);
+      customPrice = isNaN(parsed) || parsed < 0 ? undefined : parsed;
+    }
 
     let photoPath = existing.photoPath;
     if (req.file) {
@@ -233,7 +244,11 @@ export default function createProductsRouter(db: BetterSQLite3Database<typeof sc
     }
 
     db.update(schema.products)
-      .set({ name: name?.trim() ?? existing.name, photoPath })
+      .set({
+        name: name?.trim() ?? existing.name,
+        photoPath,
+        ...(customPrice !== undefined ? { customPrice } : {}),
+      })
       .where(eq(schema.products.id, id))
       .run();
 

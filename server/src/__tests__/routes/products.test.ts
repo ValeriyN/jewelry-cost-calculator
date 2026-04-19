@@ -74,10 +74,9 @@ describe("Products routes", () => {
       expect(res.status).toBe(400);
     });
 
-    it("snapshots unit cost at creation time", async () => {
+    it("propagates updated unit cost to existing product snapshots", async () => {
       const { app, token, comp1 } = await setup();
 
-      // Create product
       const product = await request(app)
         .post("/api/products")
         .set("Authorization", `Bearer ${token}`)
@@ -86,20 +85,22 @@ describe("Products routes", () => {
           components: JSON.stringify([{ componentId: comp1.id, quantity: 10 }]),
         });
 
-      const snapshotCost = product.body.components[0].unitCostSnapshot;
+      // comp1 original unitCost = 2.2
+      expect(product.body.components[0].unitCostSnapshot).toBeCloseTo(2.2);
 
-      // Now update the component price
+      // Update component price — server propagates to product_components
       await request(app)
         .put(`/api/components/${comp1.id}`)
         .set("Authorization", `Bearer ${token}`)
-        .send({ batchTotalCost: "9999", deliveryCost: "0" });
+        .send({ batchTotalCost: "1000", deliveryCost: "0" });
+      // new unitCost = 1000 / 100 = 10
 
-      // Fetch product again — snapshot should be unchanged
       const fetched = await request(app)
         .get(`/api/products/${product.body.id}`)
         .set("Authorization", `Bearer ${token}`);
 
-      expect(fetched.body.components[0].unitCostSnapshot).toBeCloseTo(snapshotCost);
+      expect(fetched.body.components[0].unitCostSnapshot).toBeCloseTo(10);
+      expect(fetched.body.totalCost).toBeCloseTo(100); // 10 * 10
     });
   });
 
@@ -138,6 +139,67 @@ describe("Products routes", () => {
       expect(product.body.categoryBreakdown).toHaveLength(1);
       expect(product.body.categoryBreakdown[0].categoryName).toBe("Намистини");
       expect(product.body.categoryBreakdown[0].totalCost).toBeCloseTo(60);
+    });
+  });
+
+  describe("Custom price", () => {
+    it("customPrice is null by default, recommendedPrice uses markup", async () => {
+      const { app, token, comp1 } = await setup();
+
+      const res = await request(app)
+        .post("/api/products")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          name: "Браслет",
+          components: JSON.stringify([{ componentId: comp1.id, quantity: 10 }]),
+        });
+      // totalCost = 10 * 2.2 = 22, recommendedPrice = 22 * 1.8 = 39.6
+
+      expect(res.body.customPrice).toBeNull();
+      expect(res.body.recommendedPrice).toBeCloseTo(22 * 1.8);
+    });
+
+    it("setting customPrice overrides recommendedPrice", async () => {
+      const { app, token, comp1 } = await setup();
+
+      const product = await request(app)
+        .post("/api/products")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "Браслет" });
+
+      const updated = await request(app)
+        .put(`/api/products/${product.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ customPrice: "999" });
+
+      expect(updated.body.customPrice).toBe(999);
+      expect(updated.body.recommendedPrice).toBe(999);
+    });
+
+    it("resetting customPrice reverts to markup-based price", async () => {
+      const { app, token, comp1 } = await setup();
+
+      const product = await request(app)
+        .post("/api/products")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          name: "Браслет",
+          components: JSON.stringify([{ componentId: comp1.id, quantity: 10 }]),
+        });
+      // totalCost = 22
+
+      await request(app)
+        .put(`/api/products/${product.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ customPrice: "500" });
+
+      const reset = await request(app)
+        .put(`/api/products/${product.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ customPrice: "reset" });
+
+      expect(reset.body.customPrice).toBeNull();
+      expect(reset.body.recommendedPrice).toBeCloseTo(22 * 1.8);
     });
   });
 

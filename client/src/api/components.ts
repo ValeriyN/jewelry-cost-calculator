@@ -23,7 +23,7 @@ export const componentsApi = {
 export const componentProductsApi = {
   list: (componentId: number) =>
     api
-      .get<{ id: number; name: string; createdAt: string }[]>(`/components/${componentId}/products`)
+      .get<{ id: number; name: string; createdAt: string; quantity: number }[]>(`/components/${componentId}/products`)
       .then((r) => r.data),
 };
 

@@ -137,6 +137,61 @@ describe("Components routes", () => {
     });
   });
 
+  describe("usedQuantity / availableQuantity", () => {
+    it("returns usedQuantity=0 and availableQuantity=batchQuantity for unused component", async () => {
+      const res = await request(app)
+        .post("/api/components")
+        .set(auth())
+        .send({ name: "Намистина", batchQuantity: 100, batchTotalCost: 200 });
+
+      expect(res.body.usedQuantity).toBe(0);
+      expect(res.body.availableQuantity).toBe(100);
+    });
+
+    it("reflects usage in products on GET /api/components", async () => {
+      const comp = await request(app)
+        .post("/api/components")
+        .set(auth())
+        .send({ name: "Дріт", batchQuantity: 50, batchTotalCost: 100 });
+
+      await request(app)
+        .post("/api/products")
+        .set(auth())
+        .send({
+          name: "Браслет",
+          components: JSON.stringify([{ componentId: comp.body.id, quantity: 15 }]),
+        });
+
+      const list = await request(app).get("/api/components").set(auth());
+      const found = list.body.find((c: any) => c.id === comp.body.id);
+
+      expect(found.usedQuantity).toBe(15);
+      expect(found.availableQuantity).toBe(35); // 50 - 15
+    });
+
+    it("reflects usage on GET /api/components/:id", async () => {
+      const comp = await request(app)
+        .post("/api/components")
+        .set(auth())
+        .send({ name: "Замок", batchQuantity: 20, batchTotalCost: 100 });
+
+      await request(app)
+        .post("/api/products")
+        .set(auth())
+        .send({
+          name: "Намисто",
+          components: JSON.stringify([{ componentId: comp.body.id, quantity: 7 }]),
+        });
+
+      const single = await request(app)
+        .get(`/api/components/${comp.body.id}`)
+        .set(auth());
+
+      expect(single.body.usedQuantity).toBe(7);
+      expect(single.body.availableQuantity).toBe(13); // 20 - 7
+    });
+  });
+
   describe("DELETE /api/components/:id", () => {
     it("deletes own component", async () => {
       const create = await request(app)
@@ -153,6 +208,27 @@ describe("Components routes", () => {
         .get(`/api/components/${create.body.id}`)
         .set(auth());
       expect(get.status).toBe(404);
+    });
+
+    it("returns 409 when component is used in a product", async () => {
+      const comp = await request(app)
+        .post("/api/components")
+        .set(auth())
+        .send({ name: "InUse", batchQuantity: 10, batchTotalCost: 100 });
+
+      await request(app)
+        .post("/api/products")
+        .set(auth())
+        .send({
+          name: "Продукт",
+          components: JSON.stringify([{ componentId: comp.body.id, quantity: 1 }]),
+        });
+
+      const del = await request(app)
+        .delete(`/api/components/${comp.body.id}`)
+        .set(auth());
+
+      expect(del.status).toBe(409);
     });
 
     it("returns 404 when user2 tries to delete user1 component", async () => {

@@ -64,6 +64,7 @@ export const products = sqliteTable("products", {
   name: text("name").notNull(),
   photoPath: text("photo_path"),
   shareToken: text("share_token").unique(),
+  customPrice: real("custom_price"),
   userId: integer("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),

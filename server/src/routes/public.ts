@@ -53,7 +53,7 @@ export default function createPublicRouter(db: BetterSQLite3Database<typeof sche
     res.json({
       name: product.name,
       photoPath: product.photoPath,
-      recommendedPrice: calcRecommendedPrice(totalCost, user.markupCoefficient),
+      recommendedPrice: product.customPrice ?? calcRecommendedPrice(totalCost, user.markupCoefficient),
       components: lines.map((l) => ({
         componentName: l.componentName,
         quantity: l.quantity,

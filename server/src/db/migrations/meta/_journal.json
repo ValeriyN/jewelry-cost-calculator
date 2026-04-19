@@ -8,6 +8,13 @@
       "when": 1775902947887,
       "tag": "0000_handy_overlord",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1776533944442,
+      "tag": "0001_slippery_chimera",
+      "breakpoints": true
     }
   ]
 }

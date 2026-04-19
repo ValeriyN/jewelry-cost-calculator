@@ -30,10 +30,10 @@ export default function PhotoUpload({ current, onChange, label }: Props) {
 
       <div
         onClick={() => galleryRef.current?.click()}
-        className="relative w-full aspect-video rounded-2xl border-2 border-dashed border-surface-600 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-surface-700/50 active:bg-surface-700"
+        className="relative w-full aspect-video rounded-2xl border-2 border-dashed border-surface-600 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-surface-700/50 active:bg-surface-700 overflow-hidden"
       >
         {displaySrc ? (
-          <img src={displaySrc} alt="Preview" className="w-full h-full object-cover rounded-2xl" />
+          <img src={displaySrc} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
         ) : (
           <>
             <svg className="w-10 h-10 text-surface-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -119,6 +119,8 @@ export default function Settings() {
 
   const [deletingCategoryId, setDeletingCategoryId] = useState<number | null>(null);
   const [deletingSupplierId, setDeletingSupplierId] = useState<number | null>(null);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const [suppliersOpen, setSuppliersOpen] = useState(false);
 
   const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: settingsApi.get });
   const { data: categories = [] } = useQuery({ queryKey: ["categories"], queryFn: categoriesApi.list });
@@ -224,28 +226,54 @@ export default function Settings() {
 
         {/* Categories */}
         <div className="space-y-2">
-          <p className="text-sm font-medium text-surface-200">Категорії складових</p>
-          <EditableList
-            items={categories}
-            emptyText="Немає категорій"
-            onRename={(id, name) => renameCategoryMutation.mutate({ id, name })}
-            onDelete={(id) => { setDeletingCategoryId(id); deleteCategoryMutation.reset(); }}
-            renameError={(renameCategoryMutation.error as any)?.response?.data?.error}
-            renameLoading={renameCategoryMutation.isPending}
-          />
+          <button
+            onClick={() => setCategoriesOpen((o) => !o)}
+            className="w-full flex items-center justify-between text-sm font-medium text-surface-200"
+          >
+            <span>Категорії складових</span>
+            <span className="flex items-center gap-1.5 text-surface-400">
+              <span className="text-xs">{categories.length}</span>
+              <svg className={`w-4 h-4 transition-transform ${categoriesOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </span>
+          </button>
+          {categoriesOpen && (
+            <EditableList
+              items={categories}
+              emptyText="Немає категорій"
+              onRename={(id, name) => renameCategoryMutation.mutate({ id, name })}
+              onDelete={(id) => { setDeletingCategoryId(id); deleteCategoryMutation.reset(); }}
+              renameError={(renameCategoryMutation.error as any)?.response?.data?.error}
+              renameLoading={renameCategoryMutation.isPending}
+            />
+          )}
         </div>
 
         {/* Suppliers */}
         <div className="space-y-2">
-          <p className="text-sm font-medium text-surface-200">Постачальники</p>
-          <EditableList
-            items={suppliers}
-            emptyText="Немає постачальників"
-            onRename={(id, name) => renameSupplierMutation.mutate({ id, name })}
-            onDelete={(id) => { setDeletingSupplierId(id); deleteSupplierMutation.reset(); }}
-            renameError={(renameSupplierMutation.error as any)?.response?.data?.error}
-            renameLoading={renameSupplierMutation.isPending}
-          />
+          <button
+            onClick={() => setSuppliersOpen((o) => !o)}
+            className="w-full flex items-center justify-between text-sm font-medium text-surface-200"
+          >
+            <span>Постачальники</span>
+            <span className="flex items-center gap-1.5 text-surface-400">
+              <span className="text-xs">{suppliers.length}</span>
+              <svg className={`w-4 h-4 transition-transform ${suppliersOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </span>
+          </button>
+          {suppliersOpen && (
+            <EditableList
+              items={suppliers}
+              emptyText="Немає постачальників"
+              onRename={(id, name) => renameSupplierMutation.mutate({ id, name })}
+              onDelete={(id) => { setDeletingSupplierId(id); deleteSupplierMutation.reset(); }}
+              renameError={(renameSupplierMutation.error as any)?.response?.data?.error}
+              renameLoading={renameSupplierMutation.isPending}
+            />
+          )}
         </div>
 
         {/* Delete category confirm */}

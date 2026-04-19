@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import type { Component } from "@jewelry/shared";
@@ -46,6 +46,7 @@ export default function ProductDetail() {
   // Local editable state
   const [productName, setProductName] = useState("");
   const [lines, setLines] = useState<Line[]>([]);
+  const [customPriceInput, setCustomPriceInput] = useState<string>("");
   const [justSaved, setJustSaved] = useState(false);
 
   // Editing existing component
@@ -69,6 +70,7 @@ export default function ProductDetail() {
   useEffect(() => {
     if (product) {
       setProductName(product.name);
+      setCustomPriceInput(product.customPrice != null ? String(product.customPrice) : "");
       setLines(
         product.components.map((c) => ({
           componentId: c.componentId!,
@@ -86,6 +88,7 @@ export default function ProductDetail() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["product", id] });
       qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["components"] });
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 2000);
     },
@@ -113,6 +116,28 @@ export default function ProductDetail() {
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productName]);
+
+  // Auto-save custom price (debounced)
+  useEffect(() => {
+    if (!product) return;
+    const currentCustom = product.customPrice != null ? String(product.customPrice) : "";
+    if (customPriceInput === currentCustom) return;
+
+    const timer = setTimeout(() => {
+      const fd = new FormData();
+      if (customPriceInput === "") {
+        fd.append("customPrice", "reset");
+      } else {
+        const val = Number(customPriceInput);
+        if (isNaN(val) || val < 0) return;
+        fd.append("customPrice", String(val));
+      }
+      updateMutation.mutate(fd);
+    }, 800);
+
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customPriceInput]);
 
   const saveComponents = (newLines: Line[]) => {
     const fd = new FormData();
@@ -189,8 +214,10 @@ export default function ProductDetail() {
   });
 
   const totalCost = lines.reduce((sum, l) => sum + l.unitCostSnapshot * l.quantity, 0);
-  const markupCoefficient = product ? product.recommendedPrice / (product.totalCost || 1) : 1;
-  const recommendedPrice = totalCost * markupCoefficient;
+  const markupCoefficient = product ? (product.recommendedPrice / (product.totalCost || 1)) : 1;
+  const autoPrice = totalCost * markupCoefficient;
+  const hasCustomPrice = customPriceInput !== "";
+  const recommendedPrice = hasCustomPrice ? (Number(customPriceInput) || autoPrice) : autoPrice;
 
   const handleShare = async () => {
     if (!product) return;
@@ -304,11 +331,29 @@ export default function ProductDetail() {
             </p>
           </div>
           <div className="bg-primary-600/10 border border-primary-500/20 rounded-2xl p-4">
-            <p className="text-xs text-primary-400">{t("products.recommendedPrice")}</p>
-            <p className="text-xl font-bold text-primary-400 mt-1 drop-shadow-[0_0_8px_rgba(167,139,250,0.5)]">
-              {recommendedPrice.toFixed(2)}
-              <span className="text-sm font-normal ml-1">{t("common.currency")}</span>
-            </p>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-primary-400">{t("products.recommendedPrice")}</p>
+              {hasCustomPrice && (
+                <button
+                  onClick={() => setCustomPriceInput("")}
+                  className="text-xs text-surface-400 hover:text-surface-200 underline"
+                >
+                  {t("common.autoPrice")} ({autoPrice.toFixed(2)})
+                </button>
+              )}
+            </div>
+            <div className="flex items-baseline gap-1">
+              <input
+                type="number"
+                min="0"
+                step="any"
+                value={customPriceInput !== "" ? customPriceInput : recommendedPrice.toFixed(2)}
+                onChange={(e) => setCustomPriceInput(e.target.value)}
+                onFocus={(e) => { if (!hasCustomPrice) { setCustomPriceInput(e.target.value); e.target.select(); } }}
+                className="w-full bg-transparent text-xl font-bold text-primary-400 focus:outline-none drop-shadow-[0_0_8px_rgba(167,139,250,0.5)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <span className="text-sm font-normal text-primary-400 shrink-0">{t("common.currency")}</span>
+            </div>
           </div>
         </div>
 
@@ -348,7 +393,13 @@ export default function ProductDetail() {
               }`}
             >
               <div>
-                <p className="text-sm font-medium text-surface-100">{line.componentName}</p>
+                <Link
+                  to={`/components/${line.componentId}/edit`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-sm font-medium text-primary-400 hover:text-primary-300"
+                >
+                  {line.componentName}
+                </Link>
                 {line.categoryName && (
                   <p className="text-xs text-surface-400">{line.categoryName}</p>
                 )}
@@ -440,16 +491,13 @@ export default function ProductDetail() {
       >
         <div className="flex items-center justify-between px-6 pt-6 pb-2">
           <div>
-            <h2 className="text-lg font-semibold text-surface-100">{t("products.addComponent")}</h2>
-            <p className="text-xs text-surface-400 mt-0.5">Оберіть складову, щоб додати її до продукту</p>
+            <h2 className="text-lg font-semibold text-surface-100">{t("products.pickComponents")}</h2>
           </div>
           <button
             onClick={() => setShowPicker(false)}
-            className="tap-target flex items-center justify-center text-surface-400"
+            className="tap-target px-3 py-1.5 text-sm font-medium text-primary-400 bg-primary-600/15 rounded-lg"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            {t("common.done")}
           </button>
         </div>
         <div className="px-6 pb-3 space-y-2">
@@ -459,7 +507,6 @@ export default function ProductDetail() {
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("components.search")}
             className="w-full px-4 py-2.5 text-base sm:text-sm rounded-xl border border-surface-600 bg-surface-700 text-surface-100 placeholder:text-surface-400 focus:outline-none focus:border-primary-400"
-            autoFocus
           />
           {categories.length > 0 && (
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">

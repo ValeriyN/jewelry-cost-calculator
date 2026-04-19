@@ -256,6 +256,25 @@ export default function ComponentForm() {
           </div>
         )}
 
+        {/* Stock availability */}
+        {isEdit && existing && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-surface-200">{t("components.stockTitle")}</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-surface-800 border border-surface-600 rounded-xl px-4 py-3">
+                <p className="text-xs text-surface-400">{t("components.usedQuantity")}</p>
+                <p className="text-xl font-bold text-surface-100">{existing.usedQuantity}</p>
+                <p className="text-xs text-surface-500">{t("components.pcs")}</p>
+              </div>
+              <div className={`border rounded-xl px-4 py-3 ${existing.availableQuantity < 0 ? "bg-red-500/10 border-red-500/30" : "bg-surface-800 border-surface-600"}`}>
+                <p className="text-xs text-surface-400">{t("components.availableQuantity")}</p>
+                <p className={`text-xl font-bold ${existing.availableQuantity < 0 ? "text-red-400" : "text-surface-100"}`}>{existing.availableQuantity}</p>
+                <p className="text-xs text-surface-500">{t("components.pcs")}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Used in products */}
         {isEdit && usedInProducts.length > 0 && (
           <div className="space-y-2">
@@ -270,13 +289,16 @@ export default function ComponentForm() {
                   }`}
                 >
                   <span className="text-sm font-medium text-primary-400">{p.name}</span>
-                  <span className="text-xs text-surface-400">
-                    {new Date(p.createdAt.replace(" ", "T") + "Z").toLocaleDateString("uk-UA", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-surface-300">×{p.quantity}</span>
+                    <span className="text-xs text-surface-400">
+                      {new Date(p.createdAt.replace(" ", "T") + "Z").toLocaleDateString("uk-UA", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
                 </Link>
               ))}
             </div>

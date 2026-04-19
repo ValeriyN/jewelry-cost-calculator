@@ -34,6 +34,10 @@ const uk = {
     deliveryCost: "Вартість доставки (грн)",
     unitCost: "Розрахункова вартість одиниці",
     unitCostHint: "(вартість + доставка) ÷ кількість",
+    usedQuantity: "Використано",
+    availableQuantity: "Залишок",
+    pcs: "шт",
+    stockTitle: "Залишок на складі",
     addCategory: "Створити категорію",
     addSupplier: "Додати постачальника",
     search: "Пошук...",
@@ -52,6 +56,7 @@ const uk = {
     recommendedPrice: "Рекомендована ціна",
     components: "Складові",
     addComponent: "Додати складову",
+    pickComponents: "Оберіть компоненти",
     quantity: "Кількість",
     enterQuantity: "Вкажіть кількість",
     categoryBreakdown: "Розбивка по категоріям",
@@ -94,6 +99,8 @@ const uk = {
     currency: "грн",
     pieces: "шт.",
     next: "Далі",
+    done: "Завершити",
+    autoPrice: "Авто",
   },
 } as const;
 

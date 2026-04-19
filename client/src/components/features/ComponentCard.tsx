@@ -57,13 +57,18 @@ export default function ComponentCard({ component, onClick, selectionMode, selec
             {component.unitCost.toFixed(2)} {t("common.currency")}
           </span>
         </p>
-        <p className="text-xs text-surface-400 mt-0.5">
-          {new Date(component.createdAt.replace(" ", "T") + "Z").toLocaleDateString("uk-UA", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          })}
-        </p>
+        <div className="flex items-center justify-between mt-1.5">
+          <p className="text-xs text-surface-400">
+            {new Date(component.createdAt.replace(" ", "T") + "Z").toLocaleDateString("uk-UA", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}
+          </p>
+          <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${component.availableQuantity < 0 ? "bg-red-500/15 text-red-400" : "bg-surface-700 text-surface-300"}`}>
+            {component.availableQuantity} {t("components.pcs")}
+          </span>
+        </div>
       </div>
 
       {/* Selection checkmark */}

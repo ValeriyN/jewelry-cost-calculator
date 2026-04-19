@@ -1,0 +1,1 @@
+ALTER TABLE `products` ADD `custom_price` real;

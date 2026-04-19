@@ -1,5 +1,5 @@
 import { Router, Response } from "express";
-import { eq, and, like, getTableColumns } from "drizzle-orm";
+import { eq, and, like, getTableColumns, sql } from "drizzle-orm";
 import { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import * as schema from "../db/schema";
 import { requireAuth, AuthRequest } from "../middleware/auth";
@@ -12,8 +12,10 @@ function formatComponent(
   row: typeof schema.components.$inferSelect & {
     categoryName: string | null;
     supplierName: string | null;
+    usedQuantity: number;
   }
 ) {
+  const usedQuantity = row.usedQuantity ?? 0;
   return {
     id: row.id,
     name: row.name,
@@ -26,6 +28,8 @@ function formatComponent(
     batchTotalCost: row.batchTotalCost,
     deliveryCost: row.deliveryCost,
     unitCost: row.unitCost,
+    usedQuantity,
+    availableQuantity: row.batchQuantity - usedQuantity,
     createdAt: row.createdAt,
   };
 }
@@ -43,6 +47,7 @@ export default function createComponentsRouter(db: BetterSQLite3Database<typeof 
         ...getTableColumns(schema.components),
         categoryName: schema.categories.name,
         supplierName: schema.suppliers.name,
+        usedQuantity: sql<number>`COALESCE((SELECT SUM(quantity) FROM product_components WHERE component_id = ${schema.components.id}), 0)`,
       })
       .from(schema.components)
       .leftJoin(schema.categories, eq(schema.components.categoryId, schema.categories.id))
@@ -110,6 +115,7 @@ export default function createComponentsRouter(db: BetterSQLite3Database<typeof 
         ...getTableColumns(schema.components),
         categoryName: schema.categories.name,
         supplierName: schema.suppliers.name,
+        usedQuantity: sql<number>`COALESCE((SELECT SUM(quantity) FROM product_components WHERE component_id = ${schema.components.id}), 0)`,
       })
       .from(schema.components)
       .leftJoin(schema.categories, eq(schema.components.categoryId, schema.categories.id))
@@ -128,6 +134,7 @@ export default function createComponentsRouter(db: BetterSQLite3Database<typeof 
         ...getTableColumns(schema.components),
         categoryName: schema.categories.name,
         supplierName: schema.suppliers.name,
+        usedQuantity: sql<number>`COALESCE((SELECT SUM(quantity) FROM product_components WHERE component_id = ${schema.components.id}), 0)`,
       })
       .from(schema.components)
       .leftJoin(schema.categories, eq(schema.components.categoryId, schema.categories.id))
@@ -150,6 +157,7 @@ export default function createComponentsRouter(db: BetterSQLite3Database<typeof 
         id: schema.products.id,
         name: schema.products.name,
         createdAt: schema.products.createdAt,
+        quantity: schema.productComponents.quantity,
       })
       .from(schema.productComponents)
       .innerJoin(schema.products, eq(schema.products.id, schema.productComponents.productId))
@@ -238,6 +246,7 @@ export default function createComponentsRouter(db: BetterSQLite3Database<typeof 
         ...getTableColumns(schema.components),
         categoryName: schema.categories.name,
         supplierName: schema.suppliers.name,
+        usedQuantity: sql<number>`COALESCE((SELECT SUM(quantity) FROM product_components WHERE component_id = ${schema.components.id}), 0)`,
       })
       .from(schema.components)
       .leftJoin(schema.categories, eq(schema.components.categoryId, schema.categories.id))
