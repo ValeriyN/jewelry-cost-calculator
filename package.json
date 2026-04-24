@@ -16,6 +16,7 @@
     "concurrently": "^9.0.1"
   },
   "dependencies": {
-    "@testing-library/dom": "^10.4.1"
+    "@testing-library/dom": "^10.4.1",
+    "roboto-font": "^0.1.0"
   }
 }

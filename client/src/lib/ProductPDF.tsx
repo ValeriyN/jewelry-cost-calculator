@@ -1,13 +1,19 @@
 import { Document, Page, Text, View, Image, StyleSheet, Font } from "@react-pdf/renderer";
 import type { ProductDetail } from "@jewelry/shared";
 
-Font.register({
-  family: "Roboto",
-  fonts: [
-    { src: `${window.location.origin}/fonts/Roboto-Regular.woff2`, fontWeight: 400 },
-    { src: `${window.location.origin}/fonts/Roboto-Bold.woff2`, fontWeight: 700 },
-  ],
-});
+let fontsRegistered = false;
+
+function ensureFonts() {
+  if (fontsRegistered) return;
+  fontsRegistered = true;
+  Font.register({
+    family: "Roboto",
+    fonts: [
+      { src: `${window.location.origin}/fonts/Roboto-Regular.ttf`, fontWeight: 400 },
+      { src: `${window.location.origin}/fonts/Roboto-Bold.ttf`, fontWeight: 700 },
+    ],
+  });
+}
 
 const styles = StyleSheet.create({
   page: {
@@ -110,6 +116,8 @@ interface Props {
 }
 
 export default function ProductPDF({ product }: Props) {
+  ensureFonts();
+
   const firstPhoto = product.photos?.[0];
   const photoUrl = firstPhoto
     ? `${window.location.origin}/uploads/${firstPhoto.photoPath}`
@@ -118,7 +126,6 @@ export default function ProductPDF({ product }: Props) {
   return (
     <Document title={product.name}>
       <Page size="A4" style={styles.page}>
-        {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>{product.name}</Text>
           {product.description ? (
@@ -126,12 +133,10 @@ export default function ProductPDF({ product }: Props) {
           ) : null}
         </View>
 
-        {/* Photo */}
         {photoUrl && (
           <Image src={photoUrl} style={styles.photo} />
         )}
 
-        {/* Price summary */}
         <View style={styles.priceGrid}>
           <View style={styles.priceBox}>
             <Text style={styles.priceLabel}>Собівартість</Text>
@@ -145,7 +150,6 @@ export default function ProductPDF({ product }: Props) {
           </View>
         </View>
 
-        {/* Components list — no unit prices */}
         <Text style={styles.sectionTitle}>Склад виробу</Text>
         {product.components.map((comp, idx) => (
           <View key={idx} style={styles.componentRow}>
