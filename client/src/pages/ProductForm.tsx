@@ -24,6 +24,7 @@ export default function ProductForm() {
 
   const [step, setStep] = useState<"name" | "components">("name");
   const [productName, setProductName] = useState("");
+  const [description, setDescription] = useState("");
   const [photos, setPhotos] = useState<{ file: File; preview: string }[]>([]);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [selected, setSelected] = useState<SelectedComponent[]>([]);
@@ -114,6 +115,7 @@ export default function ProductForm() {
   const handleSave = () => {
     const fd = new FormData();
     fd.append("name", productName.trim());
+    if (description.trim()) fd.append("description", description.trim());
     fd.append("components", JSON.stringify(
       selected.map((s) => ({ componentId: s.component.id, quantity: s.quantity }))
     ));
@@ -163,6 +165,16 @@ export default function ProductForm() {
             onChange={(e) => setProductName(e.target.value)}
             placeholder="Напр. Браслет «Весняний»"
           />
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-surface-200">{t("products.description")}</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={t("products.descriptionPlaceholder")}
+              rows={3}
+              className="w-full px-4 py-3 rounded-xl border border-surface-600 bg-surface-700 text-sm text-surface-100 placeholder:text-surface-400 focus:outline-none focus:border-primary-400 resize-none"
+            />
+          </div>
           <Button fullWidth size="lg" onClick={() => setStep("components")} disabled={!productName.trim()}>
             {t("common.next")} →
           </Button>

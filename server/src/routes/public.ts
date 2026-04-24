@@ -59,6 +59,7 @@ export default function createPublicRouter(db: BetterSQLite3Database<typeof sche
     // Public view: NO cost details, only recommended price
     res.json({
       name: product.name,
+      description: product.description,
       photos,
       recommendedPrice: product.customPrice ?? calcRecommendedPrice(totalCost, user.markupCoefficient),
       components: lines.map((l) => ({

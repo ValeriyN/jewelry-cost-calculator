@@ -23,7 +23,7 @@ export function calcProductTotal(components: ComponentLine[]): number {
 }
 
 export function calcRecommendedPrice(totalCost: number, markupCoefficient: number): number {
-  return totalCost * markupCoefficient;
+  return Math.round(totalCost * markupCoefficient);
 }
 
 export interface CategoryBreakdownItem {

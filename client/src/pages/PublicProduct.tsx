@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -6,11 +7,11 @@ import axios from "axios";
 export default function PublicProduct() {
   const { token } = useParams<{ token: string }>();
   const { t } = useTranslation();
+  const [activePhoto, setActivePhoto] = useState(0);
 
   const { data: product, isLoading, error } = useQuery({
     queryKey: ["public-product", token],
-    queryFn: () =>
-      axios.get(`/api/public/${token}`).then((r) => r.data),
+    queryFn: () => axios.get(`/api/public/${token}`).then((r) => r.data),
   });
 
   if (isLoading) {
@@ -34,30 +35,56 @@ export default function PublicProduct() {
     );
   }
 
+  const photos: any[] = product.photos ?? [];
+
   return (
     <div className="min-h-dvh bg-surface-950">
       <div className="max-w-lg mx-auto bg-surface-900 min-h-dvh">
-        {/* Photos */}
-        {product.photos?.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto scrollbar-none p-3">
-            {product.photos.map((photo: any) => (
-              <div key={photo.id} className="flex-shrink-0 w-48 h-48 rounded-xl overflow-hidden bg-surface-800">
-                <img
-                  src={`/uploads/${photo.photoPath}`}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
+
+        {/* Main photo */}
+        {photos.length > 0 && (
+          <div>
+            <div className="w-full aspect-square bg-surface-800 overflow-hidden">
+              <img
+                src={`/uploads/${photos[activePhoto].photoPath}`}
+                alt={product.name}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            {/* Thumbnail strip — only shown when multiple photos */}
+            {photos.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto scrollbar-none px-4 py-3">
+                {photos.map((photo: any, idx: number) => (
+                  <button
+                    key={photo.id}
+                    onClick={() => setActivePhoto(idx)}
+                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                      idx === activePhoto ? "border-primary-500" : "border-transparent"
+                    }`}
+                  >
+                    <img
+                      src={`/uploads/${photo.photoPath}`}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
 
-        <div className="px-5 py-5">
+        <div className="px-5 py-5 space-y-5">
           {/* Name */}
           <h1 className="text-2xl font-bold text-surface-100">{product.name}</h1>
 
-          {/* Recommended price — the main call to action */}
-          <div className="mt-4 bg-primary-600/10 border border-primary-500/20 rounded-2xl px-5 py-4">
+          {/* Description */}
+          {product.description && (
+            <p className="text-sm text-surface-300 leading-relaxed">{product.description}</p>
+          )}
+
+          {/* Recommended price */}
+          <div className="bg-primary-600/10 border border-primary-500/20 rounded-2xl px-5 py-4">
             <p className="text-sm text-primary-400 font-medium">{t("share.price")}</p>
             <p className="text-3xl font-bold text-primary-400 mt-1 drop-shadow-[0_0_12px_rgba(167,139,250,0.5)]">
               {product.recommendedPrice.toFixed(2)}{" "}
@@ -67,15 +94,13 @@ export default function PublicProduct() {
 
           {/* Composition */}
           {product.components.length > 0 && (
-            <div className="mt-6">
+            <div>
               <h2 className="text-sm font-semibold text-surface-200 mb-3">{t("share.composition")}</h2>
-              <div className="space-y-2">
+              <div className="space-y-0">
                 {product.components.map((comp: any, idx: number) => (
-                  <div key={idx} className="flex justify-between items-center py-2 border-b border-surface-700">
+                  <div key={idx} className="flex justify-between items-center py-2.5 border-b border-surface-700">
                     <span className="text-sm text-surface-200">{comp.componentName}</span>
-                    <span className="text-sm text-surface-400">
-                      {comp.quantity} {t("common.pieces")}
-                    </span>
+                    <span className="text-sm text-surface-400">{comp.quantity} {t("common.pieces")}</span>
                   </div>
                 ))}
               </div>

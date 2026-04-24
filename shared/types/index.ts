@@ -76,6 +76,7 @@ export interface Product {
   name: string;
   photos: ProductPhoto[];
   shareToken: string | null;
+  description: string | null;
   customPrice: number | null;
   createdAt: string;
 }

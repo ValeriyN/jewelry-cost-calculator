@@ -74,6 +74,7 @@ export default function createProductsRouter(db: BetterSQLite3Database<typeof sc
       name: product.name,
       photos: getPhotos(productId),
       shareToken: product.shareToken,
+      description: product.description,
       customPrice: product.customPrice,
       createdAt: product.createdAt,
       components: lines.map((l) => ({
@@ -137,6 +138,7 @@ export default function createProductsRouter(db: BetterSQLite3Database<typeof sc
         name: p.name,
         photos: getPhotos(p.id),
         shareToken: p.shareToken,
+        description: p.description,
         customPrice: p.customPrice,
         createdAt: p.createdAt,
         totalCost,
@@ -223,10 +225,11 @@ export default function createProductsRouter(db: BetterSQLite3Database<typeof sc
       return;
     }
 
-    const { name, components: componentsJson, customPrice: customPriceRaw } = req.body as {
+    const { name, components: componentsJson, customPrice: customPriceRaw, description } = req.body as {
       name?: string;
       components?: string;
       customPrice?: string;
+      description?: string;
     };
 
     let customPrice: number | null | undefined;
@@ -241,6 +244,7 @@ export default function createProductsRouter(db: BetterSQLite3Database<typeof sc
       .set({
         name: name?.trim() ?? existing.name,
         ...(customPrice !== undefined ? { customPrice } : {}),
+        ...(description !== undefined ? { description: description || null } : {}),
       })
       .where(eq(schema.products.id, id))
       .run();

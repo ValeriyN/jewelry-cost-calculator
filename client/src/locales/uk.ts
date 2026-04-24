@@ -73,6 +73,8 @@ const uk = {
     shareProduct: "Поділитись",
     exportPdf: "Експорт PDF",
     linkCopied: "Посилання скопійовано!",
+    description: "Опис прикраси",
+    descriptionPlaceholder: "Додайте опис матеріалів, розміру, особливостей виробу...",
     deleteConfirm: "Видалити цей продукт?",
     pieces: "шт.",
   },

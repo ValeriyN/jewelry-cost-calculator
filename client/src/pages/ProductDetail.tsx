@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import type { Component } from "@jewelry/shared";
 import { componentsApi, categoriesApi } from "../api/components";
 import { productsApi } from "../api/products";
+import { useAuthStore } from "../store/authStore";
 import AppShell from "../components/layout/AppShell";
 import PageHeader from "../components/layout/PageHeader";
 import ComponentCard from "../components/features/ComponentCard";
@@ -27,6 +28,7 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
+  const { user } = useAuthStore();
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", id],
@@ -46,6 +48,7 @@ export default function ProductDetail() {
   // Local editable state
   const [productName, setProductName] = useState("");
   const [lines, setLines] = useState<Line[]>([]);
+  const [description, setDescription] = useState("");
   const [customPriceInput, setCustomPriceInput] = useState<string>("");
   const [justSaved, setJustSaved] = useState(false);
 
@@ -79,7 +82,8 @@ export default function ProductDetail() {
   useEffect(() => {
     if (product) {
       setProductName(product.name);
-      setCustomPriceInput(product.customPrice != null ? String(product.customPrice) : "");
+      setDescription(product.description ?? "");
+      setCustomPriceInput(product.customPrice != null ? Number(product.customPrice).toFixed(2) : "");
       setLines(
         product.components.map((c) => ({
           componentId: c.componentId!,
@@ -148,21 +152,29 @@ export default function ProductDetail() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productName]);
 
-  // Auto-save custom price (debounced)
+  // Auto-save description (debounced)
+  useEffect(() => {
+    if (!product || description === (product.description ?? "")) return;
+    const timer = setTimeout(() => {
+      const fd = new FormData();
+      fd.append("description", description);
+      updateMutation.mutate(fd);
+    }, 800);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [description]);
+
+  // Auto-save custom price (debounced) — only when there is a valid number
   useEffect(() => {
     if (!product) return;
-    const currentCustom = product.customPrice != null ? String(product.customPrice) : "";
-    if (customPriceInput === currentCustom) return;
+    if (customPriceInput === "") return; // empty = user is clearing; don't auto-reset
+    const val = Number(customPriceInput);
+    if (isNaN(val) || val < 0) return;
+    if (val === (product.customPrice ?? null)) return;
 
     const timer = setTimeout(() => {
       const fd = new FormData();
-      if (customPriceInput === "") {
-        fd.append("customPrice", "reset");
-      } else {
-        const val = Number(customPriceInput);
-        if (isNaN(val) || val < 0) return;
-        fd.append("customPrice", String(val));
-      }
+      fd.append("customPrice", String(val));
       updateMutation.mutate(fd);
     }, 800);
 
@@ -246,8 +258,7 @@ export default function ProductDetail() {
   });
 
   const totalCost = lines.reduce((sum, l) => sum + l.unitCostSnapshot * l.quantity, 0);
-  const markupCoefficient = product ? (product.recommendedPrice / (product.totalCost || 1)) : 1;
-  const autoPrice = totalCost * markupCoefficient;
+  const autoPrice = Math.round(totalCost * (user?.markupCoefficient ?? 1.8));
   const hasCustomPrice = customPriceInput !== "";
   const recommendedPrice = hasCustomPrice ? (Number(customPriceInput) || autoPrice) : autoPrice;
 
@@ -382,6 +393,17 @@ export default function ProductDetail() {
           />
         </div>
 
+        {/* Description */}
+        <div className="px-4 pb-3">
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder={t("products.descriptionPlaceholder")}
+            rows={3}
+            className="w-full bg-transparent text-sm text-surface-300 placeholder:text-surface-600 focus:outline-none resize-none"
+          />
+        </div>
+
         {/* Created date */}
         <p className="px-4 pb-3 text-xs text-surface-500">
           Створено:{" "}
@@ -418,10 +440,12 @@ export default function ProductDetail() {
                 type="number"
                 min="0"
                 step="any"
-                value={customPriceInput !== "" ? customPriceInput : recommendedPrice.toFixed(2)}
+                value={customPriceInput}
+                placeholder={autoPrice.toFixed(2)}
                 onChange={(e) => setCustomPriceInput(e.target.value)}
-                onFocus={(e) => { if (!hasCustomPrice) { setCustomPriceInput(e.target.value); e.target.select(); } }}
-                className="w-full bg-transparent text-xl font-bold text-primary-400 focus:outline-none drop-shadow-[0_0_8px_rgba(167,139,250,0.5)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                onBlur={() => { if (customPriceInput !== "" && !customPriceInput.includes(".")) { const v = Number(customPriceInput); if (!isNaN(v) && v >= 0) setCustomPriceInput(v.toFixed(2)); } }}
+                onFocus={(e) => { if (!hasCustomPrice) { setCustomPriceInput(autoPrice.toFixed(2)); e.target.select(); } }}
+                className="w-full bg-transparent text-xl font-bold text-primary-400 placeholder:text-primary-400/60 focus:outline-none drop-shadow-[0_0_8px_rgba(167,139,250,0.5)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <span className="text-sm font-normal text-primary-400 shrink-0">{t("common.currency")}</span>
             </div>

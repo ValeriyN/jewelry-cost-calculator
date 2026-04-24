@@ -1,10 +1,18 @@
-import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, Text, View, Image, StyleSheet, Font } from "@react-pdf/renderer";
 import type { ProductDetail } from "@jewelry/shared";
+
+Font.register({
+  family: "Roboto",
+  fonts: [
+    { src: `${window.location.origin}/fonts/Roboto-Regular.woff2`, fontWeight: 400 },
+    { src: `${window.location.origin}/fonts/Roboto-Bold.woff2`, fontWeight: 700 },
+  ],
+});
 
 const styles = StyleSheet.create({
   page: {
     padding: 40,
-    fontFamily: "Helvetica",
+    fontFamily: "Roboto",
     fontSize: 11,
     color: "#1a1a1a",
   },
@@ -16,9 +24,15 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontFamily: "Helvetica-Bold",
+    fontWeight: 700,
     color: "#111827",
     marginBottom: 4,
+  },
+  description: {
+    fontSize: 10,
+    color: "#4b5563",
+    marginTop: 6,
+    lineHeight: 1.5,
   },
   photo: {
     width: "100%",
@@ -51,17 +65,17 @@ const styles = StyleSheet.create({
   },
   priceValue: {
     fontSize: 18,
-    fontFamily: "Helvetica-Bold",
+    fontWeight: 700,
     color: "#111827",
   },
   priceValueHighlight: {
     fontSize: 18,
-    fontFamily: "Helvetica-Bold",
+    fontWeight: 700,
     color: "#a21caf",
   },
   sectionTitle: {
     fontSize: 12,
-    fontFamily: "Helvetica-Bold",
+    fontWeight: 700,
     color: "#374151",
     marginBottom: 8,
     marginTop: 4,
@@ -96,17 +110,25 @@ interface Props {
 }
 
 export default function ProductPDF({ product }: Props) {
+  const firstPhoto = product.photos?.[0];
+  const photoUrl = firstPhoto
+    ? `${window.location.origin}/uploads/${firstPhoto.photoPath}`
+    : null;
+
   return (
     <Document title={product.name}>
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>{product.name}</Text>
+          {product.description ? (
+            <Text style={styles.description}>{product.description}</Text>
+          ) : null}
         </View>
 
         {/* Photo */}
-        {product.photoPath && (
-          <Image src={`/uploads/${product.photoPath}`} style={styles.photo} />
+        {photoUrl && (
+          <Image src={photoUrl} style={styles.photo} />
         )}
 
         {/* Price summary */}
